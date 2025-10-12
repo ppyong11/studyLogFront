@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useUIStore } from "../store/uiStore";
+import { ConfirmModal } from './common/modals/ConfirmModal';
 
 export function NotificationModal() {
     console.log("모달");
@@ -112,56 +113,18 @@ export function NotificationModal() {
     {/* 팝업 표시 */}
     {showDeletePopup &&
     (deleteTarget === "all" ? (
-        <DeleteAllPopup onConfirm={confirmDelete} onCancel={cancelDelete} />
+        <ConfirmModal
+            title= "알림 전체 삭제"
+            message="알림을 모두 삭제하시겠습니까?"
+            onConfirm={confirmDelete} 
+            onCancel={cancelDelete} />
         ) : (
-        <DeleteOnePopup onConfirm={confirmDelete} onCancel={cancelDelete} />
+        <ConfirmModal
+            title= "알림 삭제"
+            message="해당 알림을 삭제하시겠습니까?"
+            onConfirm={confirmDelete} 
+            onCancel={cancelDelete} />
     ))}
     </>
     );
 }
-//전체 삭제 확인 팝업 컴포넌트
-const DeleteAllPopup = ({ onConfirm, onCancel }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full">
-            <h3 className="text-lg font-bold text-gray-900 mb-4"> 알림 전체 삭제</h3>
-            <p className="text-sm text-gray-600 mb-6">알림을 모두 삭제하시겠습니까?</p>
-            <div className="flex justify-end space-x-4">
-                <button
-                    onClick={onCancel}
-                    className="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
-                >
-                    아니오
-                </button>
-                <button
-                    onClick={onConfirm}
-                    className="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                >
-                    예
-                </button>
-            </div>
-        </div>
-    </div>
-);
-
-//일부 삭제 확인 팝업 컴포넌트
-const DeleteOnePopup = ({ onConfirm, onCancel }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
-        <div className="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full">
-            <p className="text-sm text-gray-600 mb-6">해당 알림을 삭제하시겠습니까?</p>
-            <div className="flex justify-end space-x-4">
-                <button
-                    onClick={onCancel}
-                    className="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
-                >
-                    아니오
-                </button>
-                <button
-                    onClick={onConfirm}
-                    className="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                >
-                    예
-                </button>
-            </div>
-        </div>
-    </div>
-);

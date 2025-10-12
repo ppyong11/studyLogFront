@@ -1,6 +1,7 @@
 'use client'; //form 상태 관리
 import Header from "../../components/Header";
 import { useState, useEffect } from "react";
+import { ConfirmModal } from '../../components/common/modals/ConfirmModal';
 
 const apiUrl= process.env.NEXT_PUBLIC_API_URL;
 
@@ -51,31 +52,6 @@ const ActionButton = ({ onClick, text, disabled, color = 'blue' }) => {
         </button>
     );
 };
-
-
-// 취소 확인 팝업 컴포넌트
-const CancelPopup = ({ onConfirm, onCancel }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">회원가입 취소</h3>
-            <p className="text-sm text-gray-600 mb-6">정말로 회원가입을 취소하시겠습니까? 작성된 내용은 저장되지 않습니다.</p>
-            <div className="flex justify-end space-x-4">
-                <button
-                    onClick={onCancel}
-                    className="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
-                >
-                    아니오
-                </button>
-                <button
-                    onClick={onConfirm}
-                    className="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                >
-                    예
-                </button>
-            </div>
-        </div>
-    </div>
-);
 
 
 // 메인 회원가입 폼 컴포넌트이자 페이지의 기본 내보내기
@@ -296,7 +272,14 @@ const handleChange = (e) => {
     <>
         <Header />
         <div className="w-screen min-h-screen flex items-center justify-center overflow-auto py-12">
-            {showCancelPopup && <CancelPopup onConfirm={handleConfirmCancel} onCancel={() => setShowCancelPopup(false)} />}
+            {showCancelPopup && (
+                <ConfirmModal 
+                    title="회원가입 취소"
+                    message="정말 회원가입을 취소하시겠습니까? 작성된 내용은 저장되지 않습니다."
+                    onConfirm={handleConfirmCancel} 
+                    onCancel={() => setShowCancelPopup(false)} 
+                />
+            )}
             
             <div className="w-11/12 sm:w-3/4 md:w-2/3 lg:w-1/2 max-w-[600px]">
                 <div className="text-center">

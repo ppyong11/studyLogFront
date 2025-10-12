@@ -1,7 +1,9 @@
+'use client'
+
 export default function Mypage(){
     return(
         <h1>
-            mainPage
+            myPage
         </h1>
     );
 }

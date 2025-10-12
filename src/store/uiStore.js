@@ -8,7 +8,7 @@ export const useUIStore = create((set) => ({
         set((state) => ({ isNotificationOpen: !state.isNotificationOpen })),
     
 
-    // 사이드바
+    // 사이드바 (여러 컴포넌트에서 사이드바 상태 공유)
     isSidebarOpen: false,
     toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 }));

@@ -1,7 +1,9 @@
 'use client'; //form 상태 관리
-import Header from "../../components/Header";
 import { useState, useEffect } from "react";
+import { useRouter } from 'next/navigation';
 import { ConfirmModal } from '../../components/common/modals/ConfirmModal';
+import axios from 'axios';
+import AppLayout from "../../components/AppLayout";
 
 const apiUrl= process.env.NEXT_PUBLIC_API_URL;
 
@@ -22,8 +24,8 @@ const InputField = ({ id, label, type, placeholder, value, onChange, error, disa
                 value={value}
                 onChange={onChange}
                 disabled={disabled}
-                className={`w-full p-2 border rounded-md transition-shadow duration-200 ease-in-out
-                    ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}
+                className={`w-full p-2 border rounded-md
+                    ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'}
                     ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
                 `}
             />
@@ -56,9 +58,11 @@ const ActionButton = ({ onClick, text, disabled, color = 'blue' }) => {
 
 // 메인 회원가입 폼 컴포넌트이자 페이지의 기본 내보내기
 export default function SignUpForm() {
+    const router= useRouter();
+
     // 입력 값 상태
     const [formData, setFormData] = useState({
-        userId: '',
+        id: '',
         password: '',
         confirmPassword: '',
         nickname: '',
@@ -105,22 +109,22 @@ export default function SignUpForm() {
     };
 
     // 입력 값 변경 핸들러
-const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
 
-    // 모든 필드 입력 시 바로 검증 
-    if (['password', 'confirmPassword', 'userId', 'nickname', 'email'].includes(name)) {
-        validate(name, value);
-    }
-};
+        // 모든 필드 입력 시 바로 검증 
+        if (['password', 'confirmPassword', 'id', 'nickname', 'email'].includes(name)) {
+            validate(name, value);
+        }
+    };
 
 
     // 유효성 검사 함수 (백 보내기 전)
     const validate = (name, value) => {
         let error = '';
         switch (name) {
-            case 'userId':
+            case 'id':
                 if (!/^[a-zA-Z0-9]{4,12}$/.test(value)) {
                     error = '아이디는 4~12자 영문 또는 숫자여야 합니다.';
                 }
@@ -154,76 +158,114 @@ const handleChange = (e) => {
 
 
     // 아이디 중복 확인 핸들러
-    const handleIdCheck = () => {
-        if (!validate('userId', formData.userId)) return;
-        // 실제로는 여기서 백엔드 API 호출
-        console.log(`Checking ID: ${formData.userId}`);
-        setTimeout(() => {
-            // 예시: 'testuser'는 이미 사용 중인 아이디
-            if (formData.userId === 'testuser') {
-                setErrors(prev => ({ ...prev, userId: '이미 사용 중인 아이디입니다.' }));
-            } else {
-                alert('사용 가능한 아이디입니다.');
-                setIsIdChecked(true);
+    const handleIdCheck = async () =>  {
+        if (!validate('id', formData.id)) return;
+
+        try{
+            const res= await axios.get(`${apiUrl}/signup/check-id`, {
+                params: {
+                    id: formData.id,
+                },
+            });
+
+            alert(res.data.message);
+            setIsIdChecked(true);
+        } catch (error){
+            if (error.response) { //중복일 경우
+                alert(error.response.data.message);
+            } else { // 에러 응답이 안 온 상황 (서버 죽었거나 네트워크 문제, 프론트 문제) 
+                alert(`서버에 연결되지 않습니다.`);
             }
-        }, 500);
+        }
     };
     
     // 닉네임 중복 확인 핸들러
-    const handleNicknameCheck = () => {
+    const handleNicknameCheck = async () => {
         if (!validate('nickname', formData.nickname)) return;
-        // 실제로는 여기서 백엔드 API 호출
-        console.log(`Checking Nickname: ${formData.nickname}`);
-        setTimeout(() => {
-            if (formData.nickname === 'admin') {
-                setErrors(prev => ({ ...prev, nickname: '이미 사용 중인 닉네임입니다.' }));
-            } else {
-                alert('사용 가능한 닉네임입니다.');
-                setIsNicknameChecked(true);
+
+        try{
+            const res= await axios.get(`${apiUrl}/signup/check-nickname`, {
+                params: {
+                    nickname: formData.nickname
+                },
+            });
+
+            alert(res.data.message);
+            setIsNicknameChecked(true);
+        } catch (error){
+            if (error.response) { //중복일 경우
+                alert(error.response.data.message);
+            } else { // 에러 응답이 안 온 상황 (서버 죽었거나 네트워크 문제, 프론트 문제) 
+                alert(`서버에 연결되지 않습니다.`);
             }
-        }, 500);
+        }
     };
 
     // 이메일 인증 코드 발송/재전송 핸들러
-    const handleEmailSend = () => {
+    const handleEmailSend = async () => {
         if (!validate('email', formData.email)) return;
-        // 실제로는 여기서 백엔드 API 호출
-        console.log(`Sending auth code to: ${formData.email}`);
-        alert('인증 코드가 발송되었습니다. 이메일을 확인해주세요.');
-        setIsEmailSent(true);
-        setShowAuthCodeInput(true);
-        setTimer(180); // 타이머 초기화
+
+        try{
+            const res= await axios.post(`${apiUrl}/signup/send-email-code`, {
+                    email: formData.email,
+                });
+            
+            if(!isEmailSent) { //첫 발송
+                alert("사용 가능한 이메일입니다. " + res.data.message);
+            } else{
+                alert("인증 메일이 재전송되었습니다")
+            }
+
+            setIsEmailSent(true);
+            setShowAuthCodeInput(true);
+            setTimer(180); // 타이머 초기화
+        } catch (error){
+            if (error.response) {
+                alert(error.response.data.message);
+            } else { 
+                alert(`서버에 연결되지 않습니다.`);
+            }
+        }
+
     };
 
     // 인증 코드 확인 핸들러
-    const handleAuthCodeConfirm = () => {
+    const handleAuthCodeConfirm = async () => {
         if(timer === 0){
         alert("인증 시간이 만료되었습니다. 재전송 버튼을 눌러주세요.");
         return;
         }
-        // 실제로는 여기서 백엔드 API 호출
-        console.log(`Confirming code: ${formData.authCode}`);
-        setTimeout(() => {
-            if (formData.authCode === '123456') { // 예시: 정답 코드 '123456'
-                alert('이메일 인증이 완료되었습니다.');
-                setIsEmailVerified(true);
-            } else {
-                setErrors(prev => ({ ...prev, authCode: '인증 코드가 올바르지 않습니다.' }));
+        
+        // 인증코드 API 요청
+        try{
+            const res= await axios.post(`${apiUrl}/signup/verify-email-code`, {
+                email: formData.email,
+                code: formData.authCode,
+            });
+
+            // 인증 성공 시 알림
+            alert(res.data.message);
+            setIsEmailVerified(true);
+        } catch (error){
+            if (error.response) { //인증 실패
+                alert(error.response.data.message);
+            } else { // 에러 응답이 안 온 상황 (서버 죽었거나 네트워크 문제, 프론트 문제) 
+                alert(`서버에 연결되지 않습니다.`);
             }
-        }, 500);
+        }
     };
     
     // 전체 폼 제출 핸들러
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault(); // 폼 제출 시 리로드 막음
         
-        const isUserIdValid = validate('userId', formData.userId);
+        const isIdValid = validate('id', formData.id);
         const isPasswordValid = validate('password', formData.password);
         const isConfirmPasswordValid = validate('confirmPassword', formData.confirmPassword);
         const isNicknameValid = validate('nickname', formData.nickname);
         const isEmailValid = validate('email', formData.email);
 
-        if (!isUserIdValid || !isPasswordValid || !isConfirmPasswordValid || !isNicknameValid || !isEmailValid) {
+        if (!isIdValid || !isPasswordValid || !isConfirmPasswordValid || !isNicknameValid || !isEmailValid) {
             alert('입력 정보를 다시 확인해주세요.');
             return;
         }
@@ -242,9 +284,25 @@ const handleChange = (e) => {
         }
 
         // 모든 검증 통과 시 백엔드에 데이터 전송
-        console.log('Form submitted:', formData);
-        alert('회원가입이 완료되었습니다!');
-        // 로그인 페이지로 리디렉션 또는 상태 초기화
+        try{
+            const res= await axios.post(`${apiUrl}/signup`, {
+                id: formData.id,
+                password: formData.password,
+                nickname: formData.nickname,
+                email: formData.email,
+            });
+            console.log(res.data);
+
+            //성공 시 알림 + 리디렉션
+            alert('회원가입이 완료되었습니다!');
+            router.push('/');
+        } catch (error){
+            if (error.response) { //서버로부터 에러 응답 받음
+                alert(error.response.data.message);
+            } else { // 에러 응답이 안 온 상황 (서버 죽었거나 네트워크 문제, 프론트 문제) 
+                alert(`서버에 연결되지 않습니다.`);
+            }
+        }
     };
 
     // 취소 버튼 핸들러
@@ -253,25 +311,13 @@ const handleChange = (e) => {
     };
 
     const handleConfirmCancel = () => {
-        // 모든 상태 초기화
-        setFormData({
-            userId: '', password: '', confirmPassword: '', nickname: '', email: '', authCode: '',
-        });
-        setErrors({});
-        setIsIdChecked(false);
-        setIsNicknameChecked(false);
-        setIsEmailSent(false);
-        setIsEmailVerified(false);
-        setShowAuthCodeInput(false);
-        setTimer(180);
-        setShowCancelPopup(false);
-        console.log("회원가입이 취소되었습니다.");
+        // 경로 이동하면서 모두 사라지고 새로 렌더링되기 때문에 초기화 필요 X (뒤로 가기해도 없음)
+        router.push('/');
     };
 
     return (
-    <>
-        <Header />
-        <div className="w-screen min-h-screen flex items-center justify-center overflow-auto py-12">
+    <AppLayout>
+        <div className="min-h-screen flex justify-center overflow-auto py-20 select-none">
             {showCancelPopup && (
                 <ConfirmModal 
                     title="회원가입 취소"
@@ -281,17 +327,17 @@ const handleChange = (e) => {
                 />
             )}
             
-            <div className="w-11/12 sm:w-3/4 md:w-2/3 lg:w-1/2 max-w-[600px]">
+            <div className="w-full max-w-[500px] mx-auto px-2">
                 <div className="text-center">
-                <h1 className="text-3xl font-extrabold text-gray-900">회원가입</h1>
+                <h1 className="text-3xl text-center font-extrabold text-gray-900">회원가입</h1>
                 <p className="mt-2 text-sm text-gray-600">회원이 되어 스터디 로그의 편리함을 경험해 보세요!</p>
                 </div>
 
-                <form className="mt-6 sm:mt-8 bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-lg space-y-4 sm:space-y-6" onSubmit={handleSubmit} noValidate>
+                <form className="mt-10 bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-lg space-y-4 sm:space-y-6" onSubmit={handleSubmit} noValidate>
                     <div className="space-y-4">
                         <div className="flex items-end gap-2 w-full">
                             <div className="flex-grow min-w-0">
-                                <InputField id="userId" label="아이디" type="text" placeholder="아이디를 입력해 주세요." value={formData.userId} onChange={handleChange} error={errors.userId} disabled={isIdChecked} />
+                                <InputField id="id" label="아이디" type="text" placeholder="아이디를 입력해 주세요." value={formData.id} onChange={handleChange} error={errors.id} disabled={isIdChecked} />
                             </div>
                             <div className="w-28 flex-shrink-0">
                                 <ActionButton onClick={handleIdCheck} text={isIdChecked ? '확인 완료' : '중복 확인'} disabled={isIdChecked} color={isIdChecked ? 'gray' : 'blue'} />
@@ -356,7 +402,7 @@ const handleChange = (e) => {
                 </form>
             </div>
         </div>
-    </>
+    </AppLayout>
     );
 }
 

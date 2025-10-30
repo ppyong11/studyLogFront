@@ -33,7 +33,11 @@ export default function Header() {
     const [isModalOpen, setIsModalOpen]= useState(false);
     const toggleModal = () => setIsModalOpen(prev => !prev); //isModalOpen 변수를 바꿀 수 없어서 새 객체를 참조하는 건가...
 
+    const [isShowLogoPopup, setShowLogoPopup] = useState(false);
+
     const [isShowLogoutModal, setShowLogoutModal ]= useState(false);
+
+    const hideSidebar = pathname === "/login" || pathname === "/signup";
 
     const menuItems= [
         { name: "메인페이지", path: "/" },
@@ -42,6 +46,10 @@ export default function Header() {
         { name: "게시판", path: "/boards" },
         { name: "마이페이지", path: "/myPage" },
     ];
+
+    const handleLogoClick = () => {
+        setShowLogoPopup(true);
+    }
 
     const renderUserSection = () => {
         if (isAuthPage) return null;
@@ -92,13 +100,36 @@ export default function Header() {
                     onCancel={() => setShowLogoutModal(false)}
                 />
             )}
-            <header className="flex items-center justify-between p-4 bg-white w-full flex-shrink-0">
+            {isShowLogoPopup && (
+                <ConfirmModal
+                    title="메인화면 이동"
+                    message="작업 중인 내용이 모두 사라질 수 있습니다. 이동할까요?"
+                    onConfirm={() => {
+                        router.push('/');
+                        setShowLogoPopup(false);
+                    }}
+                    onCancel={() => setShowLogoPopup(false)}
+                    />
+            )}
+            <header className="flex items-center justify-between p-4 bg-white w-full flex-shrink-0 select-none">
                 <div className="flex items-center space-x-4">
-                    <button id= "hamburger" className="p-2 rounded-md hover:bg-gray-100" onClick={toggleSidebar}>
-                        <Image src= {hamburger} alt= "sideBar" width={24} height={24}/>
-                    </button>
+                    {/* 사이드바 가려야 되면 div로 위치 할당 (로고 위치 고정), 아니면 햄버거바 띄우기 */}
+                    {hideSidebar ? (<div className="w-10" />) : 
+                    (
+                        <button id= "hamburger" className="p-2 rounded-md hover:bg-gray-100" onClick={toggleSidebar}>
+                            <Image src= {hamburger} alt= "sideBar" width={24} height={24}/>
+                        </button>
+                    )}
 
-                    <button onClick={() => router.push("/")} className="flex items-center">
+
+                    <button 
+                        onClick={ () => {
+                            if (pathname !== "/login") {
+                                handleLogoClick();
+                            } else {
+                                router.push("/");
+                            }
+                        }} className="flex items-center">
                         <Image src= {logo} alt= "메인페이지 이동" width={40} height={40}/>
                         <span className="ml-2 font-bold text-2xl">STUDY LOG</span>
                     </button>

@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import { ConfirmModal } from '../../components/common/modals/ConfirmModal';
 import axios from 'axios';
-import AppLayout from "../../components/AppLayout";
 
 const apiUrl= process.env.NEXT_PUBLIC_API_URL;
 
@@ -316,7 +315,6 @@ export default function SignUpForm() {
     };
 
     return (
-    <AppLayout>
         <div className="min-h-screen flex justify-center overflow-auto py-20 select-none">
             {showCancelPopup && (
                 <ConfirmModal 
@@ -402,7 +400,6 @@ export default function SignUpForm() {
                 </form>
             </div>
         </div>
-    </AppLayout>
     );
 }
 

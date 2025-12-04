@@ -1,15 +1,18 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
+import { authStore } from "../../store/authStore";
 import axios from 'axios';
-import AppLayout from "../../components/AppLayout";
 import Link from "next/link";
+import { showToast } from "../../utils/toastMessage";
 
 const apiUrl= process.env.NEXT_PUBLIC_API_URL;
 
 export default function logInForm(){
     const router = useRouter();
+    const user = authStore((state) => state.user); // 값
+    const setUser = authStore((state) => state.setUser); // 함수 
 
     const [formData, setFormData] = useState({
         id:'',
@@ -24,10 +27,10 @@ export default function logInForm(){
         setFormData(prev => ({ ...prev, [name]: value }));
     }
 
-    useEffect( () => {
+    useEffect(() => {
         const saveId = localStorage.getItem("saveId");
         if (saveId) {
-            setFormData(prev => ({ ...prev, id: saveId }));
+            setFormData((prev) => ({ ...prev, id: saveId }));
             setRemember(true);
         }
     }, []);
@@ -42,10 +45,14 @@ export default function logInForm(){
             const res = await axios.post(`${apiUrl}/login`, {
                 id: formData.id,
                 pw: formData.pw,
+            }, {
+                withCredentials: true, // 쿠키 받음
             });
             
-            alert(res.data.message);
-            router.push('/');
+            showToast(`${res.data.data.nickname} 님, 반가워요  😊`);
+            setUser(res.data.data); //리렌더 될 때 응답 DTO가 user 객체에 들어감
+            setTimeout(() => router.push('/'), 3);
+            
         } catch(error){
             if (error.response) {
                 alert(error.response.data.message);
@@ -56,7 +63,6 @@ export default function logInForm(){
     };
 
     return (
-    <AppLayout>
         <div className="min-h-screen flex justify-center overflow-auto py-30 select-none">
             <div className="w-full max-w-[450px] px-2">
             <h1 className="text-3xl text-center font-extrabold text-gray-900">로그인</h1>
@@ -67,7 +73,7 @@ export default function logInForm(){
                             type="text"
                             name="id"
                             placeholder="아이디"
-                            value={FormData.id}
+                            value={formData.id}
                             onChange={handleChange}
                             className="w-full p-2 border border-gray-300 rounded-md"
                         />
@@ -75,7 +81,7 @@ export default function logInForm(){
                             type="password"
                             name="pw"
                             placeholder="비밀번호"
-                            value={FormData.password}
+                            value={formData.password}
                             onChange={handleChange}
                             className="w-full p-2 border border-gray-300 rounded-md"
                         />
@@ -88,11 +94,10 @@ export default function logInForm(){
                             로그인
                         </button>
                         {/* 인라인 요소는 마진이 적용 안 돼서 블럭처리 */}
-                        <Link href="/signup" className="mt-2 inline-block text-gray-400 hover:text-indigo-600">회원 가입</Link> 
+                        <Link href="/signup" className="mt-2 inline-block text-gray-400 hover:text-indigo-600">회원가입</Link> 
                 </div>
             </form>
         </div>
         </div>
-    </AppLayout>
 )
 }

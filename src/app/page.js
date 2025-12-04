@@ -1,12 +1,15 @@
-'use client'
+"use client";
 
 import { useState, useEffect } from 'react';
-import Header from "../components/Header";
+import { authStore } from '../store/authStore';
 
-export default function Home() {
+export default function MainPage() {
+
+  const user = authStore((state) => state.user);
+  console.log(user);
+
   return (
     <>
-      <Header />
       <main className="flex flex-col items-center justify-center h-screen bg-white">
         <h1 className="text-4xl font-bold">Study Log 메인 페이지</h1>
         <p className="mt-4 text-gray-600">여기에 네가 만든 메인 컴포넌트 넣으면 돼</p>

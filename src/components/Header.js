@@ -1,43 +1,82 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from 'next/navigation';
 import { useUIStore } from "../store/uiStore";
 import { NotificationModal } from './NotificationModal';
-import { ConfirmModal } from "./common/modals/ConfirmModal";
+import { useNotificationStore } from "../store/NotificationStore";
+import { ConfirmModal } from "./common/ConfirmModal";
 import { authStore } from "../store/authStore";
-import { useUser } from "../hooks/useUser";
 
 import Link from 'next/link';
 import logo from "../assets/logo.png";
 import hamburger from "../assets/hamburger.png";
-import notification from "../assets/notification.png";
+import { Bell } from "lucide-react"; // 아이콘
 import profile from "../assets/profile.png";
 import xbutton from "../assets/multiply.png";
 import Image from "next/image"; 
-import axios from 'axios';
-
-const apiUrl= process.env.NEXT_PUBLIC_API_URL;
+import { showToast } from "../utils/toastMessage";
 
 export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
 
-    const user = useUser(); // 마운트 후 체크된 유저 객체
-    
-    const clearUser = authStore((state) => state.clearUser);
+    const { user, isChecking, hasChecked } = authStore();
 
-    const toggleNotification= useUIStore((state) => state.toggleNotification);
-    const isOpen = useUIStore((state) => state.isNotificationOpen); //모달 상태
+    const { unreadCount, fetchUnreadCount, addNotificationFromSSE } = useNotificationStore();    const toggleNotification= useUIStore((state) => state.toggleNotification);
+    const isNotificationOpen = useUIStore((state) => state.isNotificationOpen); //모달 상태
 
     const toggleSidebar= useUIStore((state) => state.toggleSidebar);
     const isSidebarOpen= useUIStore((state) => state.isSidebarOpen);
 
     const isAuthPage = pathname === '/signup' || pathname === '/login';
 
-    const [isShowLogoPopup, setShowLogoPopup] = useState(false);
+    const { logout, clearUser } = authStore();
 
+    const [isShowLogoPopup, setShowLogoPopup] = useState(false);
     const [isShowLogoutModal, setShowLogoutModal ]= useState(false);
+
+    // Hydration Error 방지를 위한 마운트 상태 체크
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+        useEffect(() => {
+        if (!user) return;
+        
+        //앱 진입 시 개수만 조회 (빨간 점 띄우기 위함)
+        fetchUnreadCount();
+
+        //SSE 연결 (실시간 개수 증가용)
+        const sseUrl = `${process.env.NEXT_PUBLIC_API_URL}/sse/subscribe`;
+        const eventSource = new EventSource(sseUrl, { withCredentials: true });
+        
+        //이벤트 수신
+        eventSource.addEventListener("plan-completed", (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("알림 도착:", data);
+
+                //스토어 업데이트
+                addNotificationFromSSE(data);
+            } catch(error) {
+                console.error("데이터 파싱 에러:", error);
+            }
+        });
+
+        eventSource.addEventListener("subscribe-event", (event) => {
+            console.log("연결 확인:", event.data);
+        });
+
+        eventSource.onerror = (error) => {
+            // ... 에러 처리
+            eventSource.close();
+        };
+
+        return () => eventSource.close();
+    }, [user]);
 
     const hideSidebar = pathname === "/login" || pathname === "/signup";
 
@@ -49,59 +88,79 @@ export default function Header() {
         { name: "마이페이지", path: "/myPage" },
     ];
 
-    const handleLogoClick = () => {
-        console.log(pathname);
-        if (pathname === '/signup') {
-            setShowLogoPopup(true);
-        }   
-    }
-
     const renderUserSection = () => {
+        // 1. 마운트 전에는 아무것도 렌더링하지 않음 (서버/클라이언트 불일치 방지)
+        if (!mounted) return null;
         if (isAuthPage) return null;
 
-        if (user) {
-        return (
-            <div className="flex items-center space-x-4">
-            <Link href="/mypage" className="text-sm font-bold text-gray-700 hover:text-indigo-600">{user.nickname} 님</Link>
+        // 🔥 1단계: 인증 확인 중일 때는 로그인 버튼 대신 예쁜 스켈레톤(또는 빈 화면) 렌더링
+        if (isChecking || !hasChecked) {
+            return (
+                <div className="flex items-center space-x-4">
+                    {/* 닉네임과 종 모양 자리에 회색 깜빡임 박스 배치 */}
+                    <div className="w-16 h-5 bg-gray-200 animate-pulse rounded"></div>
+                    <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
+                </div>
+            );
+        }
 
-            <button onClick={toggleNotification} className="relative p-2 rounded-full hover:bg-gray-100">
-                <Image src= {notification} alt= "알림 리스트" width={25} height={25} />
-                <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-                {isOpen && <NotificationModal />}
-            </button>
-            </div>
-        );
-        } else {
+        // 🔥 2단계: 인증 확인이 끝났고 유저가 있을 때 (작성하신 코드 그대로!)
+        if (user) {
+            return (
+                <div className="flex items-center space-x-4">
+                    {/* 닉네임 링크 */}
+                    <Link href="/mypage" className="text-sm font-bold text-gray-700 hover:text-indigo-600">
+                        {user.nickname} 님
+                    </Link>
+        
+                    {/* 알림 영역 (버튼 + 배지 + 모달) */}
+                    <div className="relative">
+                        <button 
+                            onClick={toggleNotification} 
+                            className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                            <Bell className="w-6 h-6 text-gray-600" />
+                            
+                            {unreadCount > 0 && (
+                                <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-white transform translate-x-1 -translate-y-1">
+                                    {unreadCount > 99 ? "99+" : unreadCount}
+                                </span>
+                            )}
+                        </button>
+
+                        {isNotificationOpen && <NotificationModal />}
+                    </div>
+                </div>
+            );
+        }
+
+        // 인증 확인 끝났는데 유저 없을 때
         return (
             <div className="flex items-center space-x-2">
-            <Link href="/login" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600">로그인</Link>
-            <Link href="/signup" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">회원가입</Link>
+                <Link href="/login" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600">로그인</Link>
+                <Link href="/signup" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">회원가입</Link>
             </div>
         );
-        }
     };
 
     const handleLogout = async (e) => {
         e.preventDefault(); 
-        
-        try{
-            const res= await axios.post(`${apiUrl}/logout`, {}, {
-                withCredentials:true
-            });
+
+        try {
+            await logout();
             
-            alert(res.data.message);
             router.push('/');
             toggleSidebar();
-        } catch (error){
-            if (error.response) { //서버로부터 에러 응답 받음
-                alert(error.response.data.message);
-            } else { // 에러 응답이 안 온 상황 (서버 죽었거나 네트워크 문제, 프론트 문제) 
-                alert(`서버에 연결되지 않습니다.`);
+        } catch (error) {
+            if (error.response) {
+                showToast(error.response.data.message, "error");
+            } else {
+                console.log(error);
+                showToast("서버에 연결되지 않습니다.", "error");
             } 
-        } finally {
-                clearUser();
         }
     };
+
 
     return (
         <>  {/* <header>, <> 한번 더 감쌈 */}
@@ -141,8 +200,8 @@ export default function Header() {
 
                     <button 
                         onClick={ () => {
-                            if (pathname !== "/login") {
-                                handleLogoClick();
+                            if (pathname === "/signup") {
+                                setShowLogoPopup(true);
                             } else {
                                 router.push("/");
                             }
@@ -176,8 +235,9 @@ export default function Header() {
                                 onClick={toggleSidebar}
                             />
                             
-                            {user ? (
-                                <> {/* 요소를 반환하기 위해 추가 */}
+                            {/* 사이드바 내부 유저 정보도 마운트 체크 (선택사항이지만 권장) */}
+                            {mounted && user ? (
+                                <> 
                                     <Image src={profile} alt="프로필 사진" width={80} height={80} />
                                     <Link href="/mypage" className="pt-2 font-bold text-gray-700 hover:text-indigo-600">{user.nickname} 님</Link>
                                 </>
@@ -201,14 +261,6 @@ export default function Header() {
                                 key={item.path}
                                 href={item.path}
                                 onClick={(e) => {
-                                    //로그인 x
-                                    /*if (!user) {
-                                        e.preventDefault(); // 페이지 이동 X (<Link> 태그 막음)
-                                        alert("로그인 후 이용해 주세요.");
-                                    } else {
-                                        //로그인 상태면 이동 & 사이드바 닫기
-                                        toggleSidebar();
-                                    }*/
                                     toggleSidebar();
                                 }}
                                 className={`
@@ -221,8 +273,8 @@ export default function Header() {
                                 </Link>
                         ))}
                         </div>
-                        {/* 로그아웃 버튼 */}
-                        {user &&
+                        {/* 로그아웃 버튼 - mounted 체크 */}
+                        {mounted && user &&
                             <div className="mt-auto">
                                 <button
                                 onClick={handleLogout}

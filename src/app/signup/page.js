@@ -1,8 +1,9 @@
 'use client'; //form 상태 관리
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
-import { ConfirmModal } from '../../components/common/modals/ConfirmModal';
+import { ConfirmModal } from "../../components/common/ConfirmModal";
 import axios from 'axios';
+import { showToast } from "../../utils/toastMessage";
 
 const apiUrl= process.env.NEXT_PUBLIC_API_URL;
 
@@ -39,6 +40,7 @@ const ActionButton = ({ onClick, text, disabled, color = 'blue' }) => {
         gray: 'bg-gray-500 hover:bg-gray-600',
         green: 'bg-green-600 hover:bg-green-700'
     };
+    
     
     return (
         <button
@@ -167,13 +169,13 @@ export default function SignUpForm() {
                 },
             });
 
-            alert(res.data.message);
+            showToast(res.data.message);
             setIsIdChecked(true);
         } catch (error){
             if (error.response) { //중복일 경우
-                alert(error.response.data.message);
+                showToast(error.response.data.message, "error");
             } else { // 에러 응답이 안 온 상황 (서버 죽었거나 네트워크 문제, 프론트 문제) 
-                alert(`서버에 연결되지 않습니다.`);
+                showToast(`서버에 연결되지 않습니다.`, "error");
             }
         }
     };
@@ -210,9 +212,9 @@ export default function SignUpForm() {
                 });
             
             if(!isEmailSent) { //첫 발송
-                alert("사용 가능한 이메일입니다. " + res.data.message);
+                showToast("사용 가능한 이메일입니다. " + res.data.message);
             } else{
-                alert("인증 메일이 재전송되었습니다")
+                showToast("인증 메일이 재전송되었습니다")
             }
 
             setIsEmailSent(true);
@@ -317,7 +319,8 @@ export default function SignUpForm() {
     return (
         <div className="min-h-screen flex justify-center overflow-auto py-20 select-none">
             {showCancelPopup && (
-                <ConfirmModal 
+                <ConfirmModal
+                    isOpen={showCancelPopup}
                     title="회원가입 취소"
                     message="정말 회원가입을 취소하시겠습니까? 작성된 내용은 저장되지 않습니다."
                     onConfirm={handleConfirmCancel} 

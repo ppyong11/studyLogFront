@@ -11,8 +11,7 @@ const apiUrl= process.env.NEXT_PUBLIC_API_URL;
 
 export default function logInForm(){
     const router = useRouter();
-    const user = authStore((state) => state.user); // 값
-    const setUser = authStore((state) => state.setUser); // 함수 
+    const setLoginSuccess= authStore((state) => state.setLoginSuccess); // 함수
 
     const [formData, setFormData] = useState({
         id:'',
@@ -48,16 +47,21 @@ export default function logInForm(){
             }, {
                 withCredentials: true, // 쿠키 받음
             });
-            
+
             showToast(`${res.data.data.nickname} 님, 반가워요  😊`);
-            setUser(res.data.data); //리렌더 될 때 응답 DTO가 user 객체에 들어감
-            setTimeout(() => router.push('/'), 3);
             
+            console.log(res);
+            setLoginSuccess(res.data.data, res.data.tokenExpiresIn);
+
+            setTimeout(() => router.push('/'), 3);
         } catch(error){
+            console.log("axios error", error);
+            console.log("response", error.response);
+            console.log("request", error.request);
             if (error.response) {
-                alert(error.response.data.message);
+                showToast(error.response.data.message, "error");
             } else {
-                alert(`서버에 연결되지 않습니다.`);
+                showToast(`서버에 연결되지 않습니다.`, "error");
             }
         }
     };

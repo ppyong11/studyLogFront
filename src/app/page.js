@@ -1,12 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { authStore } from '../store/authStore';
-
 export default function MainPage() {
-
-  const user = authStore((state) => state.user);
-  console.log(user);
 
   return (
     <>

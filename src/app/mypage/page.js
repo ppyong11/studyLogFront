@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { User, Lock, X, Check } from 'lucide-react'; 
+import { User, Lock, X } from 'lucide-react'; 
 import { authStore } from '../../store/authStore';
 import { showToast } from '../../utils/toastMessage';
-import api from '../../api/axios';
+import api from '../../utils/api/axios';
 
 // --- [모달 1] 비밀번호 변경 모달 ---
 const PasswordChangeModal = ({ isOpen, onClose }) => {

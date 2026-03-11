@@ -109,7 +109,7 @@ export default function Header() {
             return (
                 <div className="flex items-center space-x-4">
                     {/* 닉네임 링크 */}
-                    <Link href="/mypage" className="text-sm font-bold text-gray-700 hover:text-indigo-600">
+                    <Link href="/myPage" className="text-sm font-bold text-gray-700 hover:text-indigo-600">
                         {user.nickname} 님
                     </Link>
         

@@ -6,6 +6,7 @@ import { authStore } from '../../store/authStore';
 import PasswordChangeModal from '../../components/myPage/PasswordChangeModal';
 import NicknameChangeModal from '../../components/myPage/NicknameChangeModal';
 import { useRouter } from 'next/navigation';
+import { showToast } from '../../utils/toastMessage';
 
 
 // --- [메인 페이지 컴포넌트] ---

@@ -11,10 +11,11 @@ import { calendarStore } from '../../store/calendarStore';
 export default function PlanFilterModal({ 
     isOpen, 
     onClose, 
-    categories
+    categories,
+    filters,
+    setFilters,
+    resetFilters,
 }) {
-
-        const { filters, setFilters } = calendarStore();
 
     // 필터 상태, 조건부 렌더링이라 열 때마다 초기화됨
     const [localStartDate, setLocalStartDate] = useState(getTodayString());
@@ -83,16 +84,6 @@ export default function PlanFilterModal({
             sort: sortParam
         });
         onClose();
-    };
-
-    const handleReset = () => {
-        // 기본값: 오늘 날짜, 전체 카테고리, 날짜(최신), 카테고리(가나다)
-        setLocalStartDate(getTodayString());
-        setLocalEndDate(getTodayString());
-        setLocalSelectedCats([]);
-        setLocalStatus(null);
-        setDateOrder('desc');
-        setCatOrder('asc');
     };
 
 return (
@@ -237,7 +228,7 @@ return (
                 {/* [3. 하단 버튼 영역] - 고정 (스크롤 영역 밖) */}
                 <div className="p-5 bg-gray-50 flex justify-end gap-3 border-t border-gray-200 shrink-0">
                     <button 
-                        onClick={handleReset} 
+                        onClick={resetFilters} 
                         className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
                     >
                         초기화

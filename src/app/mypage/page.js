@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { User, Lock, X } from 'lucide-react'; 
+import { User, Lock } from 'lucide-react'; 
 import { authStore } from '../../store/authStore';
 import PasswordChangeModal from '../../components/myPage/PasswordChangeModal';
 import NicknameChangeModal from '../../components/myPage/NicknameChangeModal';
 import { useRouter } from 'next/navigation';
 import { showToast } from '../../utils/toastMessage';
-
 
 // --- [메인 페이지 컴포넌트] ---
 export default function MyPage() {

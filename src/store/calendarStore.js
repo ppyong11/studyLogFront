@@ -1,8 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { getTodayString } from "../utils/dateUtils";
+import { formatLocalDate } from "../utils/dateUtils";
 import { showToast } from "../utils/toastMessage";
 import api from "../utils/api/axios";
+
+const today = new Date();
+const threeMonthsLater = new Date();
+threeMonthsLater.setMonth(today.getMonth() + 3);
 
 export const calendarStore = create(
     persist(
@@ -26,8 +30,8 @@ export const calendarStore = create(
 
         // 기본 필터 상태 설정
         filters: {
-            startDate: getTodayString(), // 기본값: 오늘
-            endDate: getTodayString(),   // 기본값: 오늘
+            startDate: formatLocalDate(today), // 기본값: 오늘
+            endDate: formatLocalDate(threeMonthsLater), //기본값: 오늘 날짜 + 3달 뒤
             categories: [],              // 빈 배열 = 전체 카테고리
             keyword: "",
             status: null,
@@ -48,8 +52,9 @@ export const calendarStore = create(
         // 필터 초기화
         resetFilters: () => set({ 
             filters: { 
-                startDate: getTodayString(), 
-                endDate: getTodayString(),
+                startDate: formatLocalDate(today), 
+                endDate: formatLocalDate(threeMonthsLater),
+                status: null,
                 keyword: "",
                 categories: [],
                 sort: ['date,desc', 'category,asc'] 

@@ -10,6 +10,5 @@ export function AppProvider({ children }) {
         checkAuth();
     }, []);
 
-
     return children;
 }

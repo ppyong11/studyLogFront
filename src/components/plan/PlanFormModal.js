@@ -19,7 +19,20 @@ export default function PlanFormModal({ isOpen, isEditMode, onClose, onSave, cat
     const [minutes, setMinutes] = useState(initialData?.minutes ? initialData.minutes % 60 : 0);
     const [memo, setMemo] = useState(initialData?.memo || '');
 
-        // 카테고리 목록이 뒤늦게 로딩될 경우를 대비해 첫 번째 카테고리로 기본값 보정
+    // 모달 열리거나 기본 데이터 바뀔 때 폼도 초기화
+    useEffect(() => {
+        if (isOpen) {
+            setName(initialData?.name || '');
+            setCategory(initialData?.categoryId || '');
+            setDate(initialData?.startDate || getTodayString());
+            setEndDate(initialData?.endDate || '');
+            setHours(initialData?.minutes ? Math.floor(initialData.minutes / 60) : 0);
+            setMinutes(initialData?.minutes ? initialData.minutes % 60 : 0);
+            setMemo(initialData?.memo || '');
+        }
+    }, [isOpen, initialData]);
+
+    // 카테고리 목록이 뒤늦게 로딩될 경우를 대비해 첫 번째 카테고리로 기본값 보정
     useEffect(() => {
         if (!category && categories.length > 0) {
             setCategory(categories[0].id);

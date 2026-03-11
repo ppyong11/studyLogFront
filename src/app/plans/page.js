@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, List, Calendar, Filter, Plus, X } from 'lucide-react';
 import { calendarStore } from '../../store/calendarStore';
-import { getTodayString } from '../../utils/dateUtils';
+import { formatLocalDate } from '../../utils/dateUtils';
 import PlanList from '../../components/plan/PlanList';
 import CalendarView from '../../components/plan/CalendarView';
 import { showToast } from "../../utils/toastMessage";
@@ -33,7 +33,7 @@ export default function PlanManagementPage() {
     // 훅은 무조건 실행 (한꺼번에 가져옴 -> 스토어 내부의 데이터가 하나만 바뀌어도 컴포넌트 리렌더링)
     const { 
         selectedDate, plans, 
-        filters, setFilters, gridStatistics, setSelectedDate, gridFetchPlans, calendarFetchPlans,
+        filters, setFilters, resetFilters, gridStatistics, setSelectedDate, gridFetchPlans, calendarFetchPlans,
         addPlan, updatePlan, updateStatusPlan, deletePlan, hasMore, isLoading
     } = calendarStore();
 
@@ -147,6 +147,11 @@ export default function PlanManagementPage() {
     }
     if (!user) return null;
 
+    // 오늘 날짜~3개월 후 날짜
+    const today = new Date();
+    const threeMonthsLater = new Date();
+    threeMonthsLater.setMonth(today.getMonth() + 3);
+
     // [추가] 필터 삭제 핸들러 (X 버튼 클릭 시)
     const handleRemoveFilter = (key, valueToRemove = null) => {
         if (key === 'categories') {
@@ -156,9 +161,7 @@ export default function PlanManagementPage() {
         } else if (key === 'status') {
             setFilters({ status: null }); // or ""
         } else if (key === 'date') {
-            // 날짜는 시작/종료를 오늘로 초기화하거나 null로 변경 (정책에 따름)
-            // 여기서는 오늘 날짜로 초기화하는 예시
-            setFilters({ startDate: getTodayString(), endDate: getTodayString() });
+            setFilters({ startDate: formatLocalDate(today), endDate: formatLocalDate(threeMonthsLater) });
         } else if (key === 'sort_date') {
             // 날짜 정렬 X -> 기본값 '최신순(desc)'으로 복구
             // 카테고리 정렬은 현재 상태 유지해야 함
@@ -174,8 +177,8 @@ export default function PlanManagementPage() {
     };
 
     const planDefaultFilters = {
-        startDate: getTodayString(),
-        endDate: getTodayString(),
+        startDate: formatLocalDate(today),
+        endDate: formatLocalDate(threeMonthsLater),
         status: null,
         keyword: "",
         categories: [],
@@ -314,8 +317,8 @@ export default function PlanManagementPage() {
                     filters={filters} 
                     categories={categories} 
                     onRemoveFilter={handleRemoveFilter} 
-                    onResetAll={calendarStore.getState().resetFilters} // 🔥 캘린더 스토어의 리셋 함수
-                    defaultFilters={planDefaultFilters}                // 🔥 계획 기본 규칙
+                    onResetAll={resetFilters}
+                    defaultFilters={planDefaultFilters}   
                 />
             </div>
         )}
@@ -378,6 +381,9 @@ export default function PlanManagementPage() {
                 onClose={() => setIsFilterModalOpen(false)} 
                 initialFilters={filters}    // 스토어의 현재 필터 상태 전달
                 categories={categories}     // 전체 카테고리 목록 전달
+                filters={filters}
+                setFilters={setFilters}
+                resetFilters={resetFilters}
             />
         )}
         

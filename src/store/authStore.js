@@ -18,6 +18,8 @@ export const authStore = create((set, get) => ({
     setUser: (user) => set({ user }),
     
     clearUser: () => {
+        localStorage.removeItem('wasLoggedIn');
+        
         if (get().refreshTimer) clearTimeout(get().refreshTimer);
         
         // 유저 정보 초기화
@@ -64,6 +66,8 @@ export const authStore = create((set, get) => ({
 
     // 로그인 성공 시 호출할 함수
     setLoginSuccess: (userData, expiresInSeconds) => {
+        localStorage.setItem('wasLogedIn', 'true');
+        
         // 기존 타이머 전부 제거
         const existing = get().refreshTimer;
         if (existing) clearTimeout(existing);
@@ -72,7 +76,7 @@ export const authStore = create((set, get) => ({
 
         const timeToRefresh = (expiresInSeconds - 60) * 1000;
         
-        // ✅ 음수 방지 (토큰이 거의 만료됐을 때 즉시 루프 방지)
+        // 음수 방지 (토큰이 거의 만료됐을 때 즉시 루프 방지)
         if (timeToRefresh <= 0) {
             console.warn("토큰 만료 임박, 갱신 스킵");
             return;
@@ -88,12 +92,12 @@ export const authStore = create((set, get) => ({
 
     // 자동으로 조용히 토큰을 다시 받아오는 함수
     silentRefresh: async () => {
-    // ✅ 실행 전 타이머 ID를 즉시 null로 - 중복 실행 원천 차단
+    // 실행 전 타이머 ID를 즉시 null로 - 중복 실행 원천 차단
     set({ refreshTimer: null });
 
     if (!get().user) return;
     
-    // ✅ isChecking 대신 별도 플래그로 관리
+    // isChecking 대신 별도 플래그로 관리
     if (get().isRefreshing) return;
     set({ isRefreshing: true });
 
@@ -104,7 +108,7 @@ export const authStore = create((set, get) => ({
 
         get().setLoginSuccess(get().user, expiresIn);
         
-        // ✅ triggerSocketRefresh는 딜레이 후 실행
+        // triggerSocketRefresh는 딜레이 후 실행
         setTimeout(() => get().triggerSocketRefresh(), 200);
 
     } catch (error) {

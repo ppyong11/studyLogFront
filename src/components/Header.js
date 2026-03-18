@@ -85,7 +85,7 @@ export default function Header() {
         { name: "메인페이지", path: "/" },
         { name: "타이머 관리", path: "/timers" },
         { name: "게시판", path: "/boards" },
-        { name: "마이페이지", path: "/myPage" },
+        { name: "마이페이지", path: "/mypage" },
     ];
 
     const renderUserSection = () => {

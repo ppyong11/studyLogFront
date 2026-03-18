@@ -1,12 +1,13 @@
 "use client";
 
 import React from 'react';
-import { categoryStore } from './CategoryStore';
+import { categoryStore } from '../../store/CategoryStore';
 
 const CategoryBadge = ({ categoryId }) => {
     const categories = categoryStore((state) => state.categories);
-    const findCategory = categoryId ? categories.find(c => String(c.id) === String(categoryId))
-    : null;
+
+    const findCategory = categoryId ? categories.find(c => String(c.id) === String(categoryId)) : null;
+    
 
     const displayName = findCategory?.name;
     const displayBg = findCategory?.bgColor;

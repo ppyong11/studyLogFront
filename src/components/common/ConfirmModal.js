@@ -4,7 +4,7 @@ export const ConfirmModal = ({ isOpen = true, title, message, onConfirm, onCance
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-400/50 flex items-center justify-center z-[100]">
+        <div className="fixed inset-0 bg-gray-400/50 flex items-center justify-center z-[300]">
             <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
                 {title && <h3 className="text-lg font-bold text-gray-900 mb-3">{title}</h3>}
                 <div className="mt-2 text-sm text-gray-600 whitespace-pre-line">{message}</div>

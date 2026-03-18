@@ -1,27 +1,39 @@
 import { useState, useEffect } from 'react';
-import { formatSeconds, parseToSeconds } from "../utils/timeUtils";
+import { parseToSeconds } from "../utils/timeUtils";
 
+// 실행 중인 타이머가 바뀔 떄마다 수행 (부모가 이 함수 호출할 때 runningTimer 보내면 비교 시작함)
 export const useTimerTicker = (runningTimer) => {
-    // 현재 화면에 보여줄 초 단위 시간
     const [seconds, setSeconds] = useState(0);
 
     useEffect(() => {
         if (!runningTimer || runningTimer.status !== 'RUNNING') {
-            // 실행 중이 아니면 DB에 저장된 값으로 초기화
             setSeconds(parseToSeconds(runningTimer?.elapsed || "00:00:00"));
             return;
         }
 
-        // 초기값 설정
-        setSeconds(parseToSeconds(runningTimer.elapsed));
+        const baseElapsed = parseToSeconds(runningTimer.elapsed);
+        const trackingStartTime = runningTimer._localTrackingStartTime || Date.now();
 
-        // 1초마다 1씩 증가
+        const calculateExactSeconds = () => {
+            const gapSeconds = Math.floor((Date.now() - trackingStartTime) / 1000);
+            return baseElapsed + gapSeconds;
+        };
+
+        // 초기 세팅
+        setSeconds(calculateExactSeconds());
+
+        // 1000ms 대신 100ms마다 확인
         const ticker = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-        }, 1000);
+            const exact = calculateExactSeconds();
+            // 현재 초와 계산된 초가 다를 때(1초가 딱 넘어가는 순간)만 화면 렌더링(상태 업데이트) 발생
+            setSeconds((prev) => {
+                if (prev !== exact) return exact;
+                return prev;
+            });
+        }, 100);
 
-        return () => clearInterval(ticker); // 컴포넌트 언마운트 시 정리
+        return () => clearInterval(ticker); // 이전에 실행한 타이머 종료
     }, [runningTimer]);
 
-    return formatSeconds(seconds);
+    return seconds;
 };

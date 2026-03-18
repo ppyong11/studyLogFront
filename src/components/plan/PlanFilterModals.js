@@ -4,8 +4,7 @@ import React, { useState, useLayoutEffect } from 'react';
 import { X, ArrowDownAZ, ArrowUpZA, CheckCircle, Circle } from 'lucide-react';
 import { getTodayString } from '../../utils/dateUtils';
 import { Virtuoso } from 'react-virtuoso';
-import { showToast } from '../../utils/toastMessage'; // 🔥 1. Toast import 추가
-import { calendarStore } from '../../store/calendarStore';
+import { showToast } from '../../utils/toastMessage';
 
 // 필터 모달
 export default function PlanFilterModal({ 
@@ -22,18 +21,18 @@ export default function PlanFilterModal({
     const [localEndDate, setLocalEndDate] = useState(getTodayString());
     const [localSelectedCats, setLocalSelectedCats] = useState([]);
 
-    // [추가] 상태 필터 (null: 전체, true: 완료, false: 미완료)
+    // 상태 필터 (null: 전체, true: 완료, false: 미완료)
     const [localStatus, setLocalStatus] = useState(null);
 
     // 정렬 방향 상태 (기준은 Date -> Category로 고정)
-    const [dateOrder, setDateOrder] = useState('desc'); // 'desc'(최신순) | 'asc'(오래된순)
-    const [catOrder, setCatOrder] = useState('asc');    // 'asc'(가나다) | 'desc'(역순)
+    const [dateOrder, setDateOrder] = useState('desc'); // desc(최신순) | asc(오래된순)
+    const [catOrder, setCatOrder] = useState('asc');    // asc(가나다) | desc(역순)
 
     // 모달이 열릴 때 초기값 세팅
     useLayoutEffect(() => {
         if (isOpen) {
             setLocalStartDate(filters?.startDate || getTodayString());
-            setLocalEndDate(filters?.endDate || getTodayString());
+            setLocalEndDate(filters?.endDate || "");
             setLocalSelectedCats(filters?.categories || []);
             setLocalStatus(filters?.status || null);
             
@@ -63,17 +62,17 @@ export default function PlanFilterModal({
 
     const handleApply = () => {
         // 날짜 필수 값 검증 로직
-        if (!localStartDate || !localEndDate) { 
-            showToast('날짜 범위를 모두 지정해 주세요.', "error"); 
+        if (!localStartDate) { 
+            showToast('시작 날짜를 지정해 주세요.', "error"); 
             return; // 리턴해서 onApply 실행 방지
         }
 
-        if (localStartDate > localEndDate) {
+        if (localEndDate && localStartDate > localEndDate) {
             showToast('시작일이 종료일보다 늦을 수 없습니다.', "error"); 
             return;
         }
 
-        // [핵심] 정렬 배열 생성: 항상 1순위 Date, 2순위 Category
+        // 정렬 배열 생성: 1순위 Date, 2순위 Category
         const sortParam = [`date,${dateOrder}`, `category,${catOrder}`];
 
         setFilters({
@@ -91,7 +90,7 @@ return (
             {/* 메인 컨테이너: overflow-hidden을 추가하여 하단바 배경색이 모서리 밖으로 나가지 않게 함 */}
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden">
                 
-                {/* [1. 헤더 영역] - 고정 */}
+                {/* 헤더 영역 */}
                 <div className="p-5 border-b border-gray-300 flex justify-between items-center shrink-0">
                     <h3 className="text-lg font-semibold">필터 및 정렬</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -99,7 +98,7 @@ return (
                     </button>
                 </div>
                 
-                {/* [2. 중앙 콘텐츠 영역] */}
+                {/* 중앙 콘텐츠 영역 */}
                 <div className="p-5 space-y-6 overflow-y-auto flex-1">
                     {/* 정렬 설정 */}
                     <div>
@@ -183,7 +182,7 @@ return (
                                 type="date" 
                                 value={localEndDate} 
                                 onChange={e => setLocalEndDate(e.target.value)} 
-                                className={`w-full p-2 border rounded-md text-sm outline-none focus:ring-1 focus:ring-blue-500 ${!localEndDate ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+                                className={`w-full p-2 border rounded-md text-sm outline-none focus:ring-1 focus:ring-blue-500 border-gray-300`}
                             />
                         </div>
                     </div>
@@ -223,9 +222,9 @@ return (
                             />
                         )}
                     </div>
-                </div> {/* <--- 중앙 스크롤 영역 종료 */}
+                </div> 
 
-                {/* [3. 하단 버튼 영역] - 고정 (스크롤 영역 밖) */}
+                {/* 하단 버튼 영역 (스크롤 영역 밖) */}
                 <div className="p-5 bg-gray-50 flex justify-end gap-3 border-t border-gray-200 shrink-0">
                     <button 
                         onClick={resetFilters} 

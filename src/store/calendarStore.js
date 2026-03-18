@@ -1,12 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { formatLocalDate } from "../utils/dateUtils";
+import { getTodayString } from "../utils/dateUtils";
 import { showToast } from "../utils/toastMessage";
 import api from "../utils/api/axios";
-
-const today = new Date();
-const threeMonthsLater = new Date();
-threeMonthsLater.setMonth(today.getMonth() + 3);
 
 export const calendarStore = create(
     persist(
@@ -30,8 +26,8 @@ export const calendarStore = create(
 
         // 기본 필터 상태 설정
         filters: {
-            startDate: formatLocalDate(today), // 기본값: 오늘
-            endDate: formatLocalDate(threeMonthsLater), //기본값: 오늘 날짜 + 3달 뒤
+            startDate: getTodayString(), // 기본값: 오늘
+            endDate: "",   // 기본값: 오늘
             categories: [],              // 빈 배열 = 전체 카테고리
             keyword: "",
             status: null,
@@ -52,9 +48,8 @@ export const calendarStore = create(
         // 필터 초기화
         resetFilters: () => set({ 
             filters: { 
-                startDate: formatLocalDate(today), 
-                endDate: formatLocalDate(threeMonthsLater),
-                status: null,
+                startDate: getTodayString(), 
+                endDate: "",
                 keyword: "",
                 categories: [],
                 sort: ['date,desc', 'category,asc'] 
@@ -150,6 +145,7 @@ export const calendarStore = create(
                     params : params   
                 });
 
+                console.log(response.data);
                 set({ plans: response.data });
 
             } catch (error) {
@@ -239,87 +235,58 @@ export const calendarStore = create(
                 throw error;
             }
         },
-
-        updateStatusPlan: async (id, currentStatus, viewType) => {
+        updateStatusPlan: async (id, currentStatus, viewType, showOnlyIncomplete) => {
             try {
-                const response = await api.patch(
-                    `/plans/${id}/complete`, 
-                    null, //바디 없음 
-                    {
-                        params : { status: !currentStatus }
-                    }
-                )
-                
-                showToast(response.data.message);
+                const response = await api.patch(`/plans/${id}/complete`, null, {
+                    params: { status: !currentStatus }
+                });
+
                 const updated = response.data.data;
+                showToast(response.data.message);
 
-                if (viewType === "grid") {
-                    // 리스트 업데이트용
-                    set((state) => {
-                        const { filters, plans, gridStatistics } =  state;
+                set((state) => {
+                    const { plans, gridStatistics } = state;
 
-                        //리스트에 있는지 확인 (중복 차감 방지)
-                        const targetIndex = plans.findIndex(p => Number(p.id) === Number(id));
-                        const existsInList = targetIndex !== -1;
-                        
-                        // 현재 걸려있는 필터와 내가 수정한 계획이 부합하는지 체크
-                        const matchesFilter = filters.status === null || updated.completed === filters.status;
+                    // 1. 계획 목록 업데이트 (교체 혹은 삭제)
+                    // 미완료 모드에서 완료로 바뀐 경우만 필터링, 나머지는 map으로 교체
+                    const isRemoving = showOnlyIncomplete && updated.completed;
+                    const newPlans = isRemoving 
+                        ? plans.filter(p => Number(p.id) !== Number(id))
+                        : plans.map(p => Number(p.id) === Number(id) ? updated : p);
 
-                        // 3. [리스트 및 통계 처리 준비]
-                        let newPlans = [...plans];
-                        let newTotal = gridStatistics.total;
-                        // ⭐ [핵심 수정] 리스트를 세지 말고, 기존 값 기반으로 계산! ⭐
-                        let newAchieved = gridStatistics.achieved; 
+                    console.log("updatedPlans:",updated);
 
-                        // 변경분 계산 (완료됐으면 +1, 취소됐으면 -1)
-                        // 주의: 이미 완료된 걸 또 완료 누를 순 없으므로, updated.completed가 true면 +1이 맞음
+                    // 2. 통계 업데이트 (Grid일 때만 수행)
+                    if (viewType === "grid") {
                         const diff = updated.completed ? 1 : -1;
-
-                        // Case A: 리스트에 없는데 추가됨 (부활)
-                        if (!existsInList && matchesFilter) {
-                            newPlans = [updated, ...plans];
-                            newTotal += 1;
-                            newAchieved += diff; // 통계 반영
-                        }
-                        // Case B: 리스트에 있었는데 조건 안 맞아서 삭제
-                        else if (existsInList && !matchesFilter) {
-                            newPlans = plans.filter(p => Number(p.id) !== Number(id));
-                            newTotal = Math.max(0, newTotal - 1);
-                            newAchieved = Math.max(0, newAchieved -1 );
-                        }
-                        // Case C: 리스트에 있고 조건도 맞아서 수정 (단순 상태 변경)
-                        else if (existsInList && matchesFilter) {
-                            newPlans = plans.map(p => Number(p.id) === Number(id) ? { ...p, ...updated } : p);
-                            newAchieved += diff; // 통계 반영
-                        }
-                        // Case D: 리스트 밖의 일 (모달만 업데이트)
-                        else {
-                            return { updated };
-                        }
-
-                        // 음수 방지 안전장치
-                        newAchieved = Math.max(0, newAchieved);
-
-                        // 4. [달성률 재계산]
+                        const newAchieved = Math.max(0, gridStatistics.achieved + diff);
+                        // 삭제되는 경우 total도 줄여줌 (목록에서 사라지니까)
+                        const newTotal = isRemoving ? Math.max(0, gridStatistics.total - 1) : gridStatistics.total;
                         const newRate = newTotal === 0 ? "0%" : ((newAchieved / newTotal) * 100).toFixed(1) + "%";
 
                         return {
-                            updated,
                             plans: newPlans,
-                            gridStatistics: {
-                                ...gridStatistics,
-                                total: newTotal,
-                                achieved: newAchieved,
-                                rate: newRate
-                            }
+                            gridStatistics: { ...gridStatistics, total: newTotal, achieved: newAchieved, rate: newRate }
                         };
+                    }
+
+                    return { plans: newPlans };
                 });
-                }
+
                 return updated;
             } catch (error) {
                 throw error;
             }
         },
+        // 자동 완료 처리 후 사용
+        updatePlanCompletedLocally: (planId) => {
+            set((state) => ({
+                // plans 배열 안에서 방금 완료된 계획을 찾아서 completed를 true로 바꿈!
+                plans: state.plans.map(plan => 
+                    plan.id === planId ? { ...plan, completed: true } : plan
+                )
+            }));
+        }, 
 
         deletePlan: async (id) => {
             try {
@@ -344,8 +311,20 @@ export const calendarStore = create(
             } catch (error) {
                 throw error;
             }
-        }
+        },
+
+        syncDeletedCategory: (deletedId, targetId) => {
+            //서버에선 알아서 바뀜
+            set((state) => ({
+                    plans: state.plans.map(plan => 
+                        String(plan.categoryId) === String(deletedId) 
+                        ? { ...plan, categoryId: targetId } // 넘겨받은 '기타' ID로 교체
+                        : plan
+                    )
+            }));
+        },
     }),
+
     {
         name: "calendar-store",
             partialize: (state) => ({

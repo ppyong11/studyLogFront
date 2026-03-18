@@ -8,7 +8,7 @@ import NicknameChangeModal from '../../components/myPage/NicknameChangeModal';
 import { useRouter } from 'next/navigation';
 import { showToast } from '../../utils/toastMessage';
 
-// --- [메인 페이지 컴포넌트] ---
+// 메인 페이지 컴포넌트
 export default function MyPage() {
     const { user, setUser } = authStore();
     const isChecking = authStore(state => state.isChecking);

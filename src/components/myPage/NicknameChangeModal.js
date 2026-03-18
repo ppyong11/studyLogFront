@@ -8,7 +8,7 @@ import api from '../../utils/api/axios';
 // 닉네임 변경 모달
 export default function NicknameChangeModal({ isOpen, onClose, currentNickname, onSuccess }) {
     const [newNickname, setNewNickname] = useState("");
-    // 에러 메시지를 담을 상태 하나만 사용 (비밀번호 모달처럼)
+
     const [error, setError] = useState("");
 
     useEffect(() => {
@@ -56,7 +56,7 @@ export default function NicknameChangeModal({ isOpen, onClose, currentNickname, 
         }
 
         try {
-            // 2. 서버 요청 (중복이면 여기서 에러 발생)
+            // 서버 요청 (중복이면 여기서 에러 발생)
             const res = await api.patch('/member/change-nickname', { nickname: newNickname });
             
             showToast("닉네임이 변경되었습니다.");
@@ -65,7 +65,7 @@ export default function NicknameChangeModal({ isOpen, onClose, currentNickname, 
             onClose();
 
         } catch (err) {
-            // 3. 서버 에러 처리 (중복 닉네임 등)
+            // 서버 에러 처리 (중복 닉네임 등)
             const serverMsg = err.response?.data?.message || "닉네임 변경 실패";
             setError(serverMsg); // 인풋 밑에 빨간 글씨로 띄움
             showToast(serverMsg, "error");

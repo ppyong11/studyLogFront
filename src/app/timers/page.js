@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useTimerStore } from '../../store/TimerStore';
-import { categoryStore } from '../../components/common/CategoryStore';
+import { categoryStore } from '../../store/CategoryStore';
 import TimerItem from '../../components/timer/TimerItem'; 
 import { TimerFormModal } from '../../components/timer/TimerModal';
 import { authStore } from '../../store/authStore';
@@ -11,7 +11,7 @@ import { calendarStore } from '../../store/calendarStore';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, Filter } from 'lucide-react'; 
 import PlanDetailModal from '../../components/plan/PlanDetailModal';
-import { ActiveFilterChips } from '../../components/common/ActiveFilterChips'; // ✅ 추가됨
+import { ActiveFilterChips } from '../../components/common/ActiveFilterChips';
 import { useCategoryAction } from '../../hooks/useCategoryAction';
 import { TimerFilterModal } from '../../components/timer/TimerFilterModal';
 
@@ -37,11 +37,11 @@ export default function TimerPage() {
     const { 
         timers, filters, setFilters, fetchTimers, 
         isLoading, totalPages, page, updateTimer, addTimer, updatePlanNameInTimers,
-        deleteTimer, resetTimer, controlTimer
+        deleteTimer, resetTimer, controlTimer, fetchRunningTimer, runningTimer
     } = useTimerStore();
 
     const { categories, fetchCategories } = categoryStore();
-    const { getPlan, updatePlan, updateStatusPlan, deletePlan } = calendarStore();
+    const { getPlan, updatePlan, updateStatusPlan, deletePlan, plans } = calendarStore();
 
     // 상태 관리
     const [selectedPlan, setSelectedPlan] = useState(null);
@@ -64,6 +64,14 @@ export default function TimerPage() {
         }
     }, [hasChecked, isChecking, user, filters]);
 
+
+    useEffect(() => {
+        if (user) {
+            // 로그인만 되어있으면 무조건 돌아가는 타이머 찾아오기
+            fetchRunningTimer();
+        }
+    }, [user]);
+
     useEffect(() => {
         if (!hasChecked || isChecking) return;
         if (!user) {
@@ -72,6 +80,7 @@ export default function TimerPage() {
         }
     }, [hasChecked, isChecking, user, router]);
 
+    // 계획 모달이어도 현재는 타이머페이지가 부모라서 여기서도 구독 필요
     useEffect(() => {
         // 컴포넌트가 화면에서 사라질 때(다른 페이지로 나갈 때) 무조건 1페이지로 리셋
         return () => {
@@ -79,12 +88,44 @@ export default function TimerPage() {
         };
     }, [setFilters]);
 
+    useEffect(() => {
+        return () => {
+            // 컴포넌트가 언마운트(나갈 때) 실행됨
+            // 다른 페이지로 이동하기 직전에 키워드만 초기화
+            setFilters({ keyword: "" });
+        };
+    }, []); // 의존성 배열을 비워두어야 페이지 진입/이탈 시 한 번씩만 작동함
+
+    // 계획 상세 모달 데이터 동기화 로직
+    useEffect(() => {
+        // 타이머 페이지에서 계획 상세 모달이 열려 있을 때 (isDetailOpen)
+        if (isDetailOpen && selectedPlan) {
+            // 전체 plans 목록(실시간 동기화됨)에서 현재 열린 계획을 찾음
+            const latestPlan = plans.find(p => String(p.id) === String(selectedPlan.id));
+            
+            if (latestPlan) {
+                // JSON 비교를 통해 데이터가 변했는지 확인 (카테고리 삭제/변경 등)
+                if (JSON.stringify(latestPlan) !== JSON.stringify(selectedPlan)) {
+                    setSelectedPlan(latestPlan);
+                }
+            }
+        }
+    }, [plans, isDetailOpen]); // plans가 바뀔 때마다 이 useEffect가 작동함!
+
+
+    // 카테고리가 변경되었을 때, 현재 열려있는 상세 모달의 데이터도 동기화
+    useEffect(() => {
+        if (editingTimer) {
+            const latestTimer = timers.find(t => String(t.id) === String(editingTimer.id));
+            
+            if (latestTimer && JSON.stringify(latestTimer) !== JSON.stringify(editingTimer)) {
+                setEditingTimer(latestTimer);
+            }
+        }
+    }, [timers]);
+
     if (!hasChecked || isChecking) return <div className="flex justify-center p-10">로딩 중...</div>;
     if (!user) return null;
-
-    // --- 핸들러 함수들 ---
-
-    const handleFilterChange = (key, value) => setFilters({ [key]: value });
 
     // 필터 삭제 핸들러 (X 버튼 클릭 시)
     const handleRemoveFilter = (key) => {
@@ -146,7 +187,7 @@ export default function TimerPage() {
             // 삭제 후, 현재 화면(현재 페이지)에 타이머가 딱 1개(방금 지운 것)만 남아있었다면?
             if (timers.length === 1) {
                 if (currentPage > 1) {
-                    handleFilterChange('page', currentPage - 1);
+                    setFilters({ page:currentPage - 1 });
                 } else {
                     // 1페이지의 마지막 항목을 지웠다면, 그냥 1페이지를 다시 호출해서 빈 배열을 받아옴
                     await fetchTimers(); 
@@ -203,14 +244,14 @@ export default function TimerPage() {
 
     return (
         <div className="h-full flex flex-col">
-            {/* 1. 상단 컨트롤 패널 */}
+            {/* 상단 컨트롤 패널 */}
             <div className="p-4 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-gray-300">
                 <div className="relative w-full md:w-auto md:flex-1">
                     <input 
                         type="text"
                         placeholder="타이머 검색..."
                         value={filters.keyword || ''} 
-                        onChange={(e) => handleFilterChange('keyword', e.target.value)}
+                        onChange={(e) => setFilters({ keyword: e.target.value })}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <Search className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -240,8 +281,8 @@ export default function TimerPage() {
                     filters={filters} 
                     categories={categories} 
                     onRemoveFilter={handleRemoveFilter} 
-                    onResetAll={resetFilters}              // 🔥 타이머 스토어의 리셋 함수
-                    defaultFilters={timerDefaultFilters}   // 🔥 타이머 기본 규칙
+                    onResetAll={resetFilters}              // 타이머 스토어의 리셋 함수
+                    defaultFilters={timerDefaultFilters}   // 타이머 기본 규칙
                 />
             </div>
             
@@ -264,7 +305,7 @@ export default function TimerPage() {
                             />
                         ))
                     ) : (
-                        <div className="py-20 text-center text-gray-400 font-medium">검색 결과가 없어요 🥲</div>
+                        <div className="py-20 text-center text-gray-400 font-medium">등록된 타이머가 없습니다.</div>
                     )}
                 </div>
 
@@ -276,7 +317,7 @@ export default function TimerPage() {
                             return (
                                 <button
                                     key={pageNum}
-                                    onClick={() => handleFilterChange('page', pageNum)}
+                                    onClick={() => setFilters({ page:pageNum })}
                                     className={`w-10 h-10 rounded-lg font-bold transition-all ${
                                         page === pageNum 
                                         ? 'bg-blue-600 text-white shadow-md' 
@@ -301,8 +342,9 @@ export default function TimerPage() {
             {isDetailOpen && selectedPlan && (
                 <PlanDetailModal 
                     isOpen={isDetailOpen} 
-                    onClose={() => { setIsDetailOpen(false); setIsEditMode(false); }} 
-                    plan={selectedPlan} 
+                    onClose={() => { setIsDetailOpen(false); setIsEditMode(false); }}
+                    // 해당 컴포넌트에 필요없는 값이 set돼도 리렌더됨!!
+                    plan={selectedPlan} // 부모에서 set변수 호출 시 리렌더링 후 props를 갱신함
                     isEditMode={isEditMode} 
                     setEditMode={setIsEditMode}
                     onUpdate={handleUpdatePlan} 

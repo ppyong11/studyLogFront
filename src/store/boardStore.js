@@ -21,7 +21,7 @@ export const useBoardStore = create(
                 sort: ['date, desc', 'title,asc'] // 정렬 기본값
             },
 
-            // --- 필터 및 페이지 변경 ---
+            // 필터 및 페이지 변경
             setFilters: (newFilters) => set((state) => {
                 const nextPage = newFilters.page || 1;
                 
@@ -35,8 +35,6 @@ export const useBoardStore = create(
                 page: 1,
                 filters: {
                     page: 1, // 이거 없으면 필터 초기화 시 undefined 에러남
-                    startDate: null,
-                    endDate: null,
                     keyword: "",
                     categories: [],
                     sort: ['date,desc', 'title,asc']
@@ -59,7 +57,7 @@ export const useBoardStore = create(
                 if (filters.keyword !== null && filters.keyword !== undefined && filters.keyword.trim() !== "") {
                     params.append("keyword", filters.keyword);
                 }
-                // 5. 리스트 타입 파라미터 
+                // 리스트 타입 파라미터 
                 if (filters.categories && filters.categories.length > 0) {
                     params.append("categories", filters.categories.join(","));
                 }
@@ -97,7 +95,7 @@ export const useBoardStore = create(
         },
 
         addBoard: async (board, draftId) => {
-            console.log(draftId);
+            console.log("addBoard:", board);
             try {
                 await api.post('/boards', board, {
                     params: { draftId } // params는 이렇게 보냄
@@ -132,7 +130,7 @@ export const useBoardStore = create(
                 }
             },
 
-    deleteBoard: async (id, page) => {
+    deleteBoard: async (id) => {
         try {
             await api.delete(`/boards/${id}`);
             
@@ -145,6 +143,17 @@ export const useBoardStore = create(
         } catch (error) {
             throw error;
         }
+    },
+
+    syncDeletedCategory: (deletedId, targetId) => {
+        //서버에선 알아서 바뀜
+        set((state) => ({
+            boards: state.boards.map(board => 
+                String(board.categoryId) === String(deletedId) 
+                ? { ...board, categoryId: targetId } // 넘겨받은 '기타' ID로 교체
+                : board
+            )
+        }));
     },
 }),
         {

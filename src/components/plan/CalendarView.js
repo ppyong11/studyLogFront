@@ -1,10 +1,12 @@
-import { ChevronLeft, ChevronRight, Link2, Loader2, AlertCircle, Circle } from 'lucide-react';
-import { useUIStore } from '../../store/uiStore'; // 스토어 가져오기
-import CategoryBadge from '../common/CategoryBadge';
 import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Link2, Loader2, AlertCircle, Circle } from 'lucide-react';
+import CategoryBadge from '../common/CategoryBadge';
+import { useUIStore } from '../../store/uiStore';
 
 const PlanCardContent = ({ plan, hasTimer, isFirstSegment, titleClass, onTimerClick, formatDateRange }) => {
     if (!isFirstSegment) return null;
+
+    console.log(plan.categoryId);
     return (
         <div className="flex flex-col h-full justify-between overflow-hidden p-0.5">
             <div className="flex flex-col gap-0.5 shrink-0">
@@ -20,7 +22,7 @@ const PlanCardContent = ({ plan, hasTimer, isFirstSegment, titleClass, onTimerCl
                     <div 
                         onClick={(e) => {
                             e.stopPropagation();
-                            onTimerClick(plan.connectedTimer);
+                            onTimerClick(plan.connectedTimer, plan);
                         }}
                         className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-bold border border-blue-100 hover:bg-blue-100 transition-all w-fit max-w-full"
                     >
@@ -36,30 +38,10 @@ const PlanCardContent = ({ plan, hasTimer, isFirstSegment, titleClass, onTimerCl
     );
 };
 
-const CalendarView = ({ calendarPlans = [], currentDate, onChangeDate, onOpenDetail, onTimerClick }) => {
-    // ✅ 스토어에서 필터 상태와 변경 함수를 가져옵니다. (페이지 이동해도 유지됨)
-    // * store/uiStore.js에 'showOnlyIncomplete'와 'setShowOnlyIncomplete'가 정의되어 있어야 합니다.
-    // * 만약 없다면 기존 로컬 state 방식을 유지하되, localStorage를 쓰거나 상위 컴포넌트로 올려야 합니다.
-    // * 여기서는 UI Store에 해당 필드가 있다고 가정하고 작성합니다. 
-    // * (없다면 아래 주석 처리된 로컬 state + useEffect 방식을 사용하세요)
-    const { 
-        calendarViewMode, 
-        setCalendarViewMode,
-        // showOnlyIncomplete,     <-- 스토어에 이 상태가 있다면 주석 해제
-        // setShowOnlyIncomplete   <-- 스토어에 이 함수가 있다면 주석 해제
-    } = useUIStore();
+const CalendarView = ({ calendarPlans = [], currentDate, onChangeDate, onOpenDetail, onTimerClick, calendarViewMode, setCalendarViewMode }) => {
 
-    // ⚠️ 만약 스토어에 없다면, 아래 로컬 상태를 사용하되 localStorage로 유지하는 코드입니다.
-    const [localShowOnlyIncomplete, setLocalShowOnlyIncomplete] = useState(() => {
-        const saved = localStorage.getItem('calendar_show_incomplete');
-        return saved ? JSON.parse(saved) : false;
-    });
-
-    const showOnlyIncomplete = localShowOnlyIncomplete; // 스토어 사용 시 이 줄 삭제
-    const setShowOnlyIncomplete = (val) => {            // 스토어 사용 시 이 함수 삭제
-        setLocalShowOnlyIncomplete(val);
-        localStorage.setItem('calendar_show_incomplete', JSON.stringify(val));
-    };
+    const showOnlyIncomplete = useUIStore((state) => state.showOnlyIncomplete);
+    const setShowOnlyIncomplete = useUIStore((state) => state.setShowOnlyIncomplete);
 
     const [isLoading, setIsLoading] = useState(true);
 
@@ -69,7 +51,7 @@ const CalendarView = ({ calendarPlans = [], currentDate, onChangeDate, onOpenDet
         return () => clearTimeout(timer);
     }, [calendarPlans, currentDate, calendarViewMode, showOnlyIncomplete]);
 
-    // ✅ MAX_VISIBLE_COUNT 제거 (모든 일정 표시)
+    // 모든 일정 표시
     const BASE_EVENT_HEIGHT = 4.9;
     const TIMER_EXTRA_HEIGHT = 1.5;
     const EVENT_GAP = 0.4;
@@ -108,7 +90,7 @@ const CalendarView = ({ calendarPlans = [], currentDate, onChangeDate, onOpenDet
         const today = new Date();
         const isMonthly = calendarViewMode === 'monthly';
 
-        // 1. 날짜 범위 설정
+        // 날짜 범위 설정
         let startDate, TOTAL_DAYS;
         if (isMonthly) {
             const firstDay = new Date(year, month, 1);
@@ -128,7 +110,7 @@ const CalendarView = ({ calendarPlans = [], currentDate, onChangeDate, onOpenDet
         let dayTotalHeights = Array.from({ length: TOTAL_DAYS }, () => HEADER_HEIGHT);
 
         if (!isLoading) {
-            // 2. 일정 필터링 및 정렬
+            // 일정 필터링 및 정렬
             const currentPlans = [...calendarPlans].filter(p => {
                 const pStart = new Date(new Date(p.startDate).setHours(0,0,0,0));
                 const pEnd = new Date(new Date(p.endDate || p.startDate).setHours(23,59,59,999));
@@ -142,7 +124,7 @@ const CalendarView = ({ calendarPlans = [], currentDate, onChangeDate, onOpenDet
                 return (new Date(b.endDate) - startB) - (new Date(a.endDate) - startA);
             });
 
-            // 3. 슬롯 할당 (단순 할당)
+            // 슬롯 할당 (단순 할당)
             const daySlots = Array.from({ length: TOTAL_DAYS }, () => []);
             currentPlans.forEach(plan => {
                 const pStart = new Date(plan.startDate);
@@ -162,7 +144,7 @@ const CalendarView = ({ calendarPlans = [], currentDate, onChangeDate, onOpenDet
                 for (let i = startIndex; i <= endIndex; i++) daySlots[i][slotIndex] = plan.id;
             });
 
-            // ✅ 4. 세그먼트 생성 (더보기/접기 로직 없이 무조건 렌더링)
+            // 세그먼트 생성
             currentPlans.forEach(plan => {
                 const pStart = new Date(plan.startDate);
                 const startIndex = Math.max(0, Math.floor((new Date(pStart).setHours(0,0,0,0) - startDate.getTime()) / (1000 * 60 * 60 * 24)));
@@ -214,10 +196,9 @@ const CalendarView = ({ calendarPlans = [], currentDate, onChangeDate, onOpenDet
                     i = realSegmentEnd + 1;
                 }
             });
-            // 더보기 버튼 생성 로직 완전 삭제됨
         } 
 
-        // 5. 배경 셀 생성 (가장 높은 셀에 맞춰 Row 높이 자동 조절)
+        // 배경 셀 생성 (가장 높은 셀에 맞춰 Row 높이 자동 조절)
         const rowMaxHeights = [];
         const ROWS_COUNT = isMonthly ? 6 : 1;
         for (let r = 0; r < ROWS_COUNT; r++) {

@@ -13,12 +13,12 @@ export const formatSeconds = (totalSeconds) => {
 export const parseToSeconds = (timeString) => {
     if (!timeString) return 0;
 
-    // 🔥 1. 이미 숫자형(초 단위)으로 들어왔다면 그대로 반환!
+    // 이미 숫자형(초 단위)으로 들어왔다면 그대로 반환
     if (typeof timeString === 'number') {
         return timeString;
     }
 
-    // 🔥 2. 혹시라도 문자열이 아닌 이상한 객체가 들어오면 0 반환 (에러 방지)
+    // 문자열이 아닌 이상한 객체가 들어오면 0 반환 (에러 방지)
     if (typeof timeString !== 'string') {
         return 0;
     }

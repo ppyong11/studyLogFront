@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import CategoryInput from "../common/CategoryInput";
 import { getTodayString } from "../../utils/dateUtils";
-import { X } from "lucide-react";
+import { X, Info } from "lucide-react";
 import { showToast } from "../../utils/toastMessage";
 
 
 // 계획 추가/수정 폼 모달
 export default function PlanFormModal({ isOpen, isEditMode, onClose, onSave, categories, onAddCategory, onUpdateCategory, onDeleteCategory, initialData = null }) {
     
-    // 2. react-window를 동적으로 불러옴 (SSR 끔, 빌드 에러 해결)
     const [name, setName] = useState(initialData?.name || '');
     const [category, setCategory] = useState(initialData?.categoryId || '');
     const [date, setDate] = useState(initialData?.startDate || getTodayString());
@@ -18,6 +17,8 @@ export default function PlanFormModal({ isOpen, isEditMode, onClose, onSave, cat
     const [hours, setHours] = useState(initialData?.minutes ? Math.floor(initialData.minutes / 60) : 0);
     const [minutes, setMinutes] = useState(initialData?.minutes ? initialData.minutes % 60 : 0);
     const [memo, setMemo] = useState(initialData?.memo || '');
+
+    const [showTimeInfo, setShowTimeInfo] = useState(false);
 
     // 모달 열리거나 기본 데이터 바뀔 때 폼도 초기화
     useEffect(() => {
@@ -29,15 +30,9 @@ export default function PlanFormModal({ isOpen, isEditMode, onClose, onSave, cat
             setHours(initialData?.minutes ? Math.floor(initialData.minutes / 60) : 0);
             setMinutes(initialData?.minutes ? initialData.minutes % 60 : 0);
             setMemo(initialData?.memo || '');
+            setShowTimeInfo(false); // 모달 열릴 때 툴팁 닫힌 상태로 초기화
         }
     }, [isOpen, initialData]);
-
-    // 카테고리 목록이 뒤늦게 로딩될 경우를 대비해 첫 번째 카테고리로 기본값 보정
-    useEffect(() => {
-        if (!category && categories.length > 0) {
-            setCategory(categories[0].id);
-        }
-    }, [categories, category]);
 
     //카테고리 정보(이름, 색상 등)가 외부에서 수정되었을 때 동기화 로직
     useEffect(() => {
@@ -102,21 +97,48 @@ export default function PlanFormModal({ isOpen, isEditMode, onClose, onSave, cat
                     <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-sm" />
                 </div>
             </div>
+
+            {/* 목표 시간 영역 */}
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">목표 시간</label>
+                <div className="flex items-center gap-1.5 mb-1 relative">
+                    <label className="block text-sm font-medium text-gray-700">목표 시간</label>
+                    <div className="relative flex items-center">
+                        <button
+                            type="button"
+                            onMouseEnter={() => setShowTimeInfo(true)}
+                            onMouseLeave={() => setShowTimeInfo(false)}
+                            onClick={() => setShowTimeInfo(!showTimeInfo)}
+                            className="text-gray-400 hover:text-blue-500 transition-colors focus:outline-none"
+                        >
+                            <Info className="w-[14px] h-[14px]" />
+                        </button>
+
+                        {/* 툴팁 모달 영역 */}
+                        {showTimeInfo && (
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 w-52 p-2.5 bg-gray-600 text-white text-xs rounded-lg shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                                목표 시간이 <span className="text-blue-300 font-bold">0</span>일 경우 타이머를 활용한
+                                <span className="font-bold"> 자동 완료 처리</span>가 작동하지 않습니다.
+                                <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-600 rotate-45 "></div>
+                            </div>
+                        )}
+                    </div>
+                </div>
                 <div className="flex items-center gap-2">
                     <input type="number" min="0" value={hours} onChange={e => setHours(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="0" />
                     <span className="text-gray-600">:</span>
                     <input type="number" min="0" max="59" value={minutes} onChange={e => setMinutes(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="0" />
                 </div>
             </div>
+
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">메모</label>
                 <textarea value={memo} onChange={e => setMemo(e.target.value)} rows="4" className="w-full p-2 border border-gray-300 rounded-md text-sm"></textarea>
             </div>
         </div>
-        <div className="p-5 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t border-gray-300"><button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border-gray-300 border rounded-md hover:bg-gray-100">취소</button>
-        <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700">저장하기</button></div>
+        <div className="p-5 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t border-gray-300">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border-gray-300 border rounded-md hover:bg-gray-100">취소</button>
+            <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700">저장하기</button>
+        </div>
         </div>
     </div>
     );

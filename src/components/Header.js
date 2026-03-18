@@ -11,7 +11,7 @@ import { authStore } from "../store/authStore";
 import Link from 'next/link';
 import logo from "../assets/logo.png";
 import hamburger from "../assets/hamburger.png";
-import { Bell } from "lucide-react"; // 아이콘
+import { Bell } from "lucide-react"; 
 import profile from "../assets/profile.png";
 import xbutton from "../assets/multiply.png";
 import Image from "next/image"; 
@@ -21,17 +21,16 @@ export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
 
-    const { user, isChecking, hasChecked } = authStore();
+    const { user, isChecking, hasChecked, logout } = authStore();
 
-    const { unreadCount, fetchUnreadCount, addNotificationFromSSE } = useNotificationStore();    const toggleNotification= useUIStore((state) => state.toggleNotification);
+    const { unreadCount, fetchUnreadCount, addNotificationFromSSE } = useNotificationStore();    
+    const toggleNotification= useUIStore((state) => state.toggleNotification);
     const isNotificationOpen = useUIStore((state) => state.isNotificationOpen); //모달 상태
 
     const toggleSidebar= useUIStore((state) => state.toggleSidebar);
     const isSidebarOpen= useUIStore((state) => state.isSidebarOpen);
 
     const isAuthPage = pathname === '/signup' || pathname === '/login';
-
-    const { logout, clearUser } = authStore();
 
     const [isShowLogoPopup, setShowLogoPopup] = useState(false);
     const [isShowLogoutModal, setShowLogoutModal ]= useState(false);
@@ -57,9 +56,11 @@ export default function Header() {
         eventSource.addEventListener("plan-completed", (event) => {
             try {
                 const data = JSON.parse(event.data);
-                console.log("알림 도착:", data);
 
-                //스토어 업데이트
+                console.log("이벤트 수신");
+                showToast(data.title, "info");
+
+                // 스토어 업데이트
                 addNotificationFromSSE(data);
             } catch(error) {
                 console.error("데이터 파싱 에러:", error);
@@ -71,7 +72,7 @@ export default function Header() {
         });
 
         eventSource.onerror = (error) => {
-            // ... 에러 처리
+            // 에러 처리
             eventSource.close();
         };
 
@@ -82,29 +83,27 @@ export default function Header() {
 
     const menuItems= [
         { name: "메인페이지", path: "/" },
-        { name: "계획 관리", path: "/plans" },
         { name: "타이머 관리", path: "/timers" },
         { name: "게시판", path: "/boards" },
         { name: "마이페이지", path: "/myPage" },
     ];
 
     const renderUserSection = () => {
-        // 1. 마운트 전에는 아무것도 렌더링하지 않음 (서버/클라이언트 불일치 방지)
+        // 마운트 전에는 아무것도 렌더링하지 않음 (서버/클라이언트 불일치 방지)
         if (!mounted) return null;
         if (isAuthPage) return null;
 
-        // 🔥 1단계: 인증 확인 중일 때는 로그인 버튼 대신 예쁜 스켈레톤(또는 빈 화면) 렌더링
+        // 인증 확인 중일 때는 로그인 버튼 대신 스켈레톤(또는 빈 화면) 렌더링
         if (isChecking || !hasChecked) {
             return (
                 <div className="flex items-center space-x-4">
-                    {/* 닉네임과 종 모양 자리에 회색 깜빡임 박스 배치 */}
                     <div className="w-16 h-5 bg-gray-200 animate-pulse rounded"></div>
                     <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
                 </div>
             );
         }
 
-        // 🔥 2단계: 인증 확인이 끝났고 유저가 있을 때 (작성하신 코드 그대로!)
+        // 인증 확인이 끝났고 유저가 있을 때
         if (user) {
             return (
                 <div className="flex items-center space-x-4">
@@ -113,10 +112,13 @@ export default function Header() {
                         {user.nickname} 님
                     </Link>
         
-                    {/* 알림 영역 (버튼 + 배지 + 모달) */}
+                    {/* 알림 영역 (버튼+배지+모달) */}
                     <div className="relative">
                         <button 
-                            onClick={toggleNotification} 
+                            onMouseDown={(e) => {
+                                e.stopPropagation(); 
+                                toggleNotification();
+                            }}
                             className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
                         >
                             <Bell className="w-6 h-6 text-gray-600" />
@@ -170,7 +172,7 @@ export default function Header() {
                     title="로그아웃"
                     message="정말 로그아웃 하시겠습니까?"
                     onConfirm={() => {
-                    // 실제 로그아웃 처리
+                    logout();
                     console.log("로그아웃 완료");
                     setShowLogoutModal(false);
                     }}
@@ -217,7 +219,6 @@ export default function Header() {
             </header>
 
             {/* 사이드바 - 헤더 밖에 위치 */}
-            {/* <div> 감쌈 */}
             {isSidebarOpen && (
                 <>
                     {/* 반투명 오버레이 */}
@@ -235,7 +236,7 @@ export default function Header() {
                                 onClick={toggleSidebar}
                             />
                             
-                            {/* 사이드바 내부 유저 정보도 마운트 체크 (선택사항이지만 권장) */}
+                            {/* 사이드바 내부 유저 정보도 마운트 체크 */}
                             {mounted && user ? (
                                 <> 
                                     <Image src={profile} alt="프로필 사진" width={80} height={80} />

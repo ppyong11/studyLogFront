@@ -1,8 +1,7 @@
-import { categoryStore } from "../components/common/CategoryStore";
+import { categoryStore } from "../store/CategoryStore"; 
 import { showToast } from "../utils/toastMessage";
 
 export const useCategoryAction = () => {
-    // 스토어에서 필요한 함수들을 한 번에 가져옵니다.
     const { addCategory, updateCategory, deleteCategory } = categoryStore();
 
     const handleAddCategory = async (name, colorObj) => {
@@ -32,7 +31,7 @@ export const useCategoryAction = () => {
         }
     };
 
-    // 완성된 3개의 함수를 객체로 묶어서 반환합니다!
+    // 완성된 3개의 함수를 객체로 묶어서 반환
     return { 
         handleAddCategory, 
         handleUpdateCategory, 

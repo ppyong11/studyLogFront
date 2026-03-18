@@ -1,44 +1,44 @@
-// store/uiStore.js
 import { create } from "zustand";
-import { persist } from "zustand/middleware"; // 자동으로 localStorage 저장
+import { persist } from "zustand/middleware";
 
 export const useUIStore = create(
     persist(
         (set) => ({
             // 알림 모달
             isNotificationOpen: false,
-            toggleNotification: () =>
-                set((state) => ({ isNotificationOpen: !state.isNotificationOpen })),
-            
+            toggleNotification: () => set((state) => ({ 
+                isNotificationOpen: !state.isNotificationOpen 
+            })),
 
-            // 사이드바 (여러 컴포넌트에서 사이드바 상태 공유)
+            // 사이드바
             isSidebarOpen: false,
             toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
-            // 계획 열람 방식 (zustand + localStorage)
+            // 계획 열람 방식
             viewType: "grid",
-            calendarViewMode: "monthly", //monthly, weekly
-            isViewTypeReady: false, // 기본값으로 api 안 날아가게 방지
+            calendarViewMode: "monthly", // monthly, weekly
+            isViewTypeReady: false,
 
-            setViewType: (type) => {
-                set({ viewType: type });
-            },
+            // 미완료 계획만 보기
+            showOnlyIncomplete: false,
+
+            setViewType: (type) => set({ viewType: type }),
             
-            setCalendarViewMode: (mode) => {
-                set({ calendarViewMode: mode });
-            },
+            setCalendarViewMode: (mode) => set({ calendarViewMode: mode }),
 
-            initViewType: () => {
-                set({ isViewTypeReady: true });
-            },
+            // 미완료 토글 함수
+            setShowOnlyIncomplete: (val) => set({ showOnlyIncomplete: val }),
+
+            initViewType: () => set({ isViewTypeReady: true }),
         }),
-        { // 변수 골라서 persist
+        { 
             name: "ui-store",
-            // state: 현재 zustand 전체 상태
             partialize: (state) => ({
-                // 이 두가지만 localStorage에 저장 (기본은 state 모든 값 저장)
+                // localStorage에 저장할 항목들
                 viewType: state.viewType,
                 calendarViewMode: state.calendarViewMode,
+                showOnlyIncomplete: state.showOnlyIncomplete,
             }),
         }
-));
+    )
+);

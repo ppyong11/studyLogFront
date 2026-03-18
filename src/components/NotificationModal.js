@@ -45,7 +45,6 @@ export function NotificationModal() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isOpen, toggle, showDeletePopup]);
 
-    // 핸들러들
     const handleDeleteAll = () => {
         setShowDeletePopup(true);
         setDeleteTarget("all");
@@ -75,10 +74,9 @@ export function NotificationModal() {
         if (!isLoading && hasMore) fetchNotifications(page + 1);
     };
 
-    // 알림 클릭 (읽음 처리 및 이동 로직)
+    // 알림 클릭 (읽음 처리)
     const handleNotificationClick = (item) => {
         if (!item.read) markAsRead(item.notificationId || item.id);
-        // router.push(item.url); // 필요 시 페이지 이동
     };
 
     if (!isOpen) return null;
@@ -89,7 +87,7 @@ export function NotificationModal() {
             ref={modalRef} 
             className="absolute top-full right-0 mt-3 w-96 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200"
         >
-            {/* 1. 헤더 영역 */}
+            {/* 헤더 영역 */}
             <div className="px-4 py-3 bg-white border-b border-gray-100 flex justify-between items-center sticky top-0 z-10">
                 <div className="flex items-center gap-2">
                     <Bell className="w-4 h-4 text-indigo-600" />
@@ -116,7 +114,7 @@ export function NotificationModal() {
                 </div>
             </div>
 
-            {/* 2. 리스트 영역 */}
+            {/* 리스트 영역 */}
             <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                 {notifications.length === 0 ? (
                     <div className="py-12 flex flex-col items-center justify-center text-gray-400">
@@ -135,10 +133,10 @@ export function NotificationModal() {
                                     {/* 내용 섹션 */}
                                     <div className="flex-1 space-y-1">
                                         
-                                        {/* 제목 + 날짜 + 파란점 영역 */}
+                                        {/* 제목+날짜+파란점 영역 */}
                                         <div className="flex justify-between items-start">
                                             
-                                            {/* [수정됨] 제목 옆에 파란 점 배치 */}
+                                            {/* 제목 옆에 파란 점 배치 */}
                                             <div className="relative pr-2">
                                                 {!item.read && (
                                                     // 파란 점: 제목 높이에 맞춰 mt 조절
@@ -158,7 +156,7 @@ export function NotificationModal() {
                                         </p>
                                     </div>
 
-                                    {/* 삭제 버튼 (Hover 시에만 등장) */}
+                                    {/* 삭제 버튼 */}
                                     <button
                                         onClick={(e) => handleDeleteOne(e, item.notificationId || item.id)}
                                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm shadow-sm border border-gray-100"

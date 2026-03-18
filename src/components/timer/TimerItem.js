@@ -2,24 +2,25 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useTimerStore } from '../../store/TimerStore';
-import { useTimerTicker } from '../../hooks/timerTicker'; 
+import { useTimerTicker } from '../../hooks/timerTicker';
 import { formatSeconds } from '../../utils/timeUtils';
 import CategoryBadge from '../common/CategoryBadge';
 import { 
     Play, Pause, RotateCcw, ChevronDown, ChevronUp, CalendarDays,
-    Edit2, Link2Off, Trash2, Link, MoreVertical, Square // 🔥 Square(정지/종료 아이콘) 추가
+    Edit2, Link2Off, Trash2, Link, MoreVertical, Square 
 } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal'; 
-import { showToast } from '../../utils/toastMessage';
+import { calendarStore } from '../../store/calendarStore';
 
 const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, page  }) => { 
-    const { toggleExpanded, expandedTimerId, runningTimer } = useTimerStore();
+    const { toggleExpanded, expandedTimerId, runningTimer, syncedTimer } = useTimerStore();
     
     const isExpanded = expandedTimerId === timer.id;
     const isRunning = timer.status === 'RUNNING';
-    const isEnded = timer.status === 'ENDED'; // 🔥 종료된 상태인지 확인
+    const isEnded = timer.status === 'ENDED';
 
-    // 🔥 1. isEndModalOpen은 삭제하고, confirmModal 하나로 모두 통일!
+    const { updatePlanCompletedLocally } = calendarStore()
+    
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false, title: "", message: "", onConfirm: null, 
     });
@@ -27,15 +28,48 @@ const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, p
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef(null);
 
-    // 2. 이 타이머가 정말 지금 스토어에서 돌고 있는 그 타이머가 맞는지 확인
-    const isThisTimerRunning = isRunning && runningTimer?.id === timer.id;
-
-    // 💡 핵심 1: 내가 실행 중이라면 플로팅 위젯과 동일하게 실시간 초(liveTime)를 계산해 옵니다.
+    // 이 타이머가 정말 지금 스토어에서 돌고 있는 그 타이머가 맞는지 확인
+    const isThisTimerRunning = isRunning && runningTimer?.id === timer.id && runningTimer?.status === 'RUNNING';
     const liveTime = useTimerTicker(isThisTimerRunning ? runningTimer : null);
 
-    // 💡 핵심 2: 실행 중이면 째깍거리는 실시간 시간을, 멈춰있으면 서버의 고정된 시간(elapsed)을 포맷팅합니다.
+    // 백엔드의 getMinutes() 기준에 맞춰 초로 변환
+    const targetTime = timer.connectedPlan?.minutes * 60; 
+
+    const isPlanCompleted = timer.connectedPlan?.completed; // 완료 여부 필드명 확인 필요
+
+    // 한 번만 찌르기 위한 Ref
+    const hasTriggeredRef = useRef(false);
+
+    useEffect(() => {
+        // 실행 중 + 목표 시간 > 0 + 아직 계획이 완료되지 않았을 때만 감시
+        if (isThisTimerRunning && targetTime && targetTime > 0 && !isPlanCompleted) {
+
+            // 흐른 시간이 목표 시간을 뚫는 바로 그 순간
+            if (liveTime >= targetTime && !hasTriggeredRef.current) {
+                hasTriggeredRef.current = true; // 중복 호출 방지
+                
+                // 수동 동기화 API 찌르기 (백엔드가 알아서 다 해줌)
+                // useEffect에서 비동기 못 써서 async 함수 만들고 사용 
+                const triggerSync = async () => {
+                    try {
+                        await syncedTimer(timer.id);
+
+                        updatePlanCompletedLocally(timer.connectedPlan?.id);
+                    } catch (error) {
+                        hasTriggeredRef.current = false; 
+                    }
+                };
+                
+                triggerSync();
+            }
+        } else if (!isThisTimerRunning) {
+            // 타이머가 멈추면 초기화 (다시 시작할 때를 대비)
+            hasTriggeredRef.current = false;
+        }
+    }, [liveTime, isThisTimerRunning, targetTime, timer?.id, isPlanCompleted]);
+
     const displayTime = isThisTimerRunning 
-        ? liveTime 
+        ? formatSeconds(liveTime)
         : formatSeconds(timer.elapsed || 0); //pause, ended는 elapsed로 띄우기
 
     // 외부 클릭 시 메뉴 닫기
@@ -49,7 +83,7 @@ const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, p
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isMenuOpen]);
 
-    // 🎯 3. 종료 버튼 클릭 시 
+    // 종료 버튼 클릭 시 
     const handleEndClick = (e) => {
         e.stopPropagation();
         
@@ -74,7 +108,7 @@ const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, p
             return;
         }
 
-        // 타이머를 '시작' 하려고 할 때 검사 로직
+        // 타이머를 시작하려고 할 때 검사 로직
         if (timer.connectedPlan?.id) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -110,7 +144,6 @@ const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, p
         // 통과되면 정상 실행
         onControl(timer.id, 'start');
     };
-    // --- (이하 삭제, 수정, 초기화 핸들러는 기존과 동일) ---
 
     const handleReset = (e) => {
         e.stopPropagation();
@@ -168,15 +201,24 @@ const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, p
                 ? 'border-blue-200 shadow-lg scale-[1.01] bg-blue-50/10' 
                 : 'border-gray-100 bg-white hover:border-gray-200'
             }`}>
-                {/* 상단 영역 (기존과 완전 동일) */}
+                {/* 상단 영역 */}
                 <div className={`p-5 flex justify-between items-center relative z-10`}>
                     <div className="flex items-center gap-4">
                         <div className={`w-2 h-2 rounded-full transition-colors duration-500 ${isRunning ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'bg-gray-300'}`} />
                         
                         <div className="flex flex-col">
-                            <div className="flex items-center gap-1 text-[10px] text-gray-400 mb-0.5">
-                                <CalendarDays size={10} />
-                                <span>{timer.createAt?.split(' ')[0]}</span>
+                            <div className="flex items-center gap-2 mb-1.5 whitespace-nowrap"> {/* 간격 살짝 넓힘 */}
+                                <div className="flex items-center text-[10px] text-gray-400">
+                                    {/* 생성일 아이콘은 생략해서 공간 확보 */}
+                                    <span>생성일: {timer.createAt?.split(' ')[0]}</span>
+                                </div>
+                                
+                                <span className="text-gray-200 text-[9px]">|</span>
+
+                                <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                                    <CalendarDays size={10} className="shrink-0" /> {/* 아이콘 찌그러짐 방지 */}
+                                    <span>최근 실행일: {timer.startAt ? timer.startAt.split(' ')[0] : '없음'}</span>
+                                </div>
                             </div>
                             
                             <h3 className={`font-bold text-base leading-tight ${isRunning ? 'text-blue-900' : 'text-gray-700'}`}>
@@ -209,7 +251,7 @@ const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, p
                     <div className="flex items-center gap-3 pl-2">
                         <div className="text-right mr-1">
                             <div className={`font-mono text-xl font-black tracking-tight ${isRunning ? 'text-blue-600' : 'text-gray-600'}`}>
-                                    {/* 💡 핵심 3: 서버의 elapsed가 아니라, 분기 처리된 displayTime을 렌더링! */}
+                                    {/* 서버의 elapsed가 아니라 분기 처리된 displayTime을 렌더링 */}
                                     {displayTime}
                             </div>
                             <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest opacity-60">
@@ -278,7 +320,7 @@ const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, p
                                 {isRunning ? <><Pause size={16} fill="currentColor" /> 일시정지</> : <><Play size={16} fill="currentColor" /> 시작</>}
                             </button>
                             
-                            {/* 🔥 종료 버튼 추가 (종료된 상태면 비활성화) */}
+                            {/* 종료 버튼 추가 (종료된 상태면 비활성화) */}
                             <button 
                                 onClick={handleEndClick}
                                 disabled={isEnded}
@@ -310,7 +352,6 @@ const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, p
                 )}
             </div>
             
-            {/* 단 하나의 통합 모달! */}
             {confirmModal.isOpen && (
                 <ConfirmModal 
                     isOpen={confirmModal.isOpen}

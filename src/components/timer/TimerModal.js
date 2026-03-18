@@ -22,20 +22,17 @@ const formatMinutesToTime = (totalMinutes) => {
     return `${m}분`;
 };
 
-// 수정, 삭제 폼
+// 삭제 폼
 export const TimerFormModal = ({ 
     isOpen, onClose, onSave, initialData = null, initialDataPlan = null,
     categories, onAddCategory, onUpdateCategory, onDeleteCategory 
 }) => {
-    console.log("타이머 폼: ", initialDataPlan);
-    // ... (기본 상태들 동일) ...
+    
     const [name, setName] = useState('');
     const [category, setCategory] = useState('');
     const [planId, setPlanId] = useState(null);
     const [planName, setPlanName] = useState('');
     const [planEndDate, setPlanEndDate] = useState('');
-    // 계획 마감일 저장
-    const [selectedPlanEndDate, setSelectedPlanEndDate] = useState(null);
 
     const [isPlanSelectorOpen, setIsPlanSelectorOpen] = useState(false); 
     const [targetStartDate, setTargetStartDate] = useState(getTodayString());      
@@ -43,10 +40,7 @@ export const TimerFormModal = ({
     const [searchKeyword, setSearchKeyword] = useState(''); 
     const [isLoading, setIsLoading] = useState(true);
 
-    // ✅ 2. 정렬 상태 분리 (독립적 관리)
-    // 1순위: 날짜 (기본 내림차순 - 최신순)
     const [dateOrder, setDateOrder] = useState('desc'); 
-    // 2순위: 카테고리 (기본 오름차순 - 가나다순)
     const [categoryOrder, setCategoryOrder] = useState('asc');
 
     const [plans, setPlans] = useState([]);                    
@@ -64,8 +58,10 @@ export const TimerFormModal = ({
         if (isOpen) {
             setName(initialData?.name || '');
             setCategory(initialDataPlan?.categoryId || initialData?.categoryId || '');
+            
             setPlanId(initialData?.connectedPlan?.id || initialDataPlan?.id || null);
             setPlanName(initialData?.connectedPlan?.name || initialDataPlan?.name || '');
+
             setPlanEndDate(initialData?.connectedPlan?.endDate || initialDataPlan?.endDate || '');
             
             // 초기화
@@ -95,7 +91,7 @@ export const TimerFormModal = ({
             const target = categories.find(c => c.name === category);
             if (target) setCategory(target.id);
         }
-    }, [categories, category]);
+    }, [categories]);
 
     // 날짜 변경 시 재검색
     useEffect(() => {
@@ -109,22 +105,21 @@ export const TimerFormModal = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isPlanSelectorOpen, targetStartDate, targetEndDate]);
 
-    // ✅ 3. 정렬 상태 변경 시 재검색 (dateOrder, categoryOrder 감지)
+    // 정렬 상태 변경 시 재검색 
     useEffect(() => {
         if (isPlanSelectorOpen) {
             fetchPlans(1);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dateOrder, categoryOrder]); 
 
-    // ✅ [API 호출] 계획 목록 조회
+    // 계획 목록 조회 (filter 바뀌어서 store 활용 X)
     const fetchPlans = async (pageNum) => {
         if (pageNum === page && isLoadingPlans && pageNum !== 1) return; 
         
         setIsLoadingPlans(true);
         try {
             const sortParams = [
-                `date,${dateOrder}`,       // 1순위: 날짜
+                `date,${dateOrder}`,
                 `category,${categoryOrder}`
             ];
 
@@ -178,15 +173,14 @@ export const TimerFormModal = ({
     const applyPlanSelection = (plan) => {
         setPlanId(plan.id);
         setPlanName(plan.name);
-        setSelectedPlanEndDate(plan.endDate); // 마감일 기록
+        setPlanEndDate(plan.endDate); 
+        
         if (!name) setName(plan.name); 
         setCategory(plan.categoryId);  
         setIsPlanSelectorOpen(false); 
     };
 
-    // 2. handleSelectPlan 수정: startDate ~ endDate 모두 검사 및 하루 안 보기 적용
     const handleSelectPlan = (plan) => {
-
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
@@ -196,7 +190,6 @@ export const TimerFormModal = ({
         const end = new Date(plan.endDate);
         end.setHours(0, 0, 0, 0);
 
-        // 오늘 날짜가 계획 기간(시작일 ~ 종료일) 밖인지 확인
         const isOutOfRange = today < start || today > end;
 
         if (isOutOfRange) {
@@ -221,26 +214,24 @@ export const TimerFormModal = ({
             return; 
         }
 
-        // 기간 안이거나, 오늘 하루 안 보기 상태면 바로 적용
         applyPlanSelection(plan);
     };
 
     const handleRemovePlan = () => {
         setPlanId(null);
         setPlanName('');
+        setPlanEndDate('');
     };
             
     const restoreOriginalPlan = () => {
-        console.log(initialData);
         setPlanId(initialData?.connectedPlan?.id || null);
         setPlanName(initialData?.connectedPlan?.name || '');
         setPlanEndDate(initialData?.connectedPlan?.endDate || '');
         setCategory(initialData?.categoryId || ''); 
-        setSelectedPlanEndDate(null);
-        showToast("기존 계획 상태로 복구되었습니다.", "info");
+        
+        showToast("기존 계획 상태로 복구되었습니다.");
     };
 
-    // 3. 더 스마트해진 handleSave
     const handleSave = () => {
         if (!name.trim()) { showToast('타이머 이름은 필수입니다.', 'error'); return; }
         if (!category) { showToast('카테고리는 필수입니다.', 'error'); return; }
@@ -251,7 +242,6 @@ export const TimerFormModal = ({
             planId: planId 
         };
 
-        // ✅ executeSave를 비동기(async)로 만들고 try-catch 적용
         const executeSave = async () => {
             try {
                 if (isEditMode) {
@@ -261,19 +251,16 @@ export const TimerFormModal = ({
                 }
             } catch (error) {
                 console.error("저장 중 에러 발생:", error);
-                // 🚨 에러가 발생하면 원래 계획 상태로 되돌림!
                 restoreOriginalPlan();
             }
         };
 
         if (isEditMode) {
-            const originalPlanId = initialData?.connectedPlan?.id || null; // ✅ 기존 planId 추출 방식도 수정
+            const originalPlanId = initialData?.connectedPlan?.id || null; 
             const currentPlanId = planId;
             const isPlanChanged = originalPlanId !== currentPlanId;
             
-            // ... 이하 조건문 로직 (기존과 동일)
             if (isPlanChanged) {
-                // 1) 계획을 아예 삭제(연결 해제) 해버린 경우
                 if (!currentPlanId) {
                     setConfirmModal({
                         isOpen: true,
@@ -285,14 +272,14 @@ export const TimerFormModal = ({
                     return;
                 }
 
-                // 2) 새로운 계획을 추가하거나, 다른 계획으로 변경하는 경우
                 if (currentPlanId) {
                     const isExecuted = initialData?.status && initialData.status !== 'READY';
                     
                     let isPlanAfterTimerCreate = false;
-                    if (initialData?.createAt && selectedPlanEndDate) {
+
+                    if (initialData?.createAt && planEndDate) {
                         const createDate = new Date(initialData.createAt.split(' ')[0]);
-                        const endDate = new Date(selectedPlanEndDate);
+                        const endDate = new Date(planEndDate);
                         
                         createDate.setHours(0, 0, 0, 0);
                         endDate.setHours(0, 0, 0, 0);
@@ -325,11 +312,9 @@ export const TimerFormModal = ({
             }
         }
         
-        // 아무것도 변경하지 않았거나, 위 조건들을 다 통과하면 바로 저장!
         executeSave();
     };
 
-    // 타이머 종료 상태
     const isEnded = initialData?.status === 'ENDED';
 
     if (!isOpen) return null;
@@ -339,22 +324,18 @@ export const TimerFormModal = ({
             <div className="absolute inset-0" onClick={onClose} />
             <div className="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh] z-10">
                 
-                {/* 헤더 */}
                 <div className="p-5 border-b border-gray-300 flex justify-between items-center shrink-0">
                     <h3 className="text-lg font-semibold">{isEditMode ? '타이머 수정' : '새 타이머 추가'}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-6 w-6" /></button>
                 </div>
 
-                {/* 🌟 핵심: isLoading이 true일 때 보여줄 로딩 화면 🌟 */}
                 {isLoading ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-20">
                         <Loader2 className="w-10 h-10 animate-spin text-blue-500 mb-4" />
                         <p className="text-sm font-medium text-gray-500">데이터를 불러오는 중입니다...</p>
                     </div>
                 ) : (
-                    /* 🌟 isLoading이 false일 때 보여줄 원래 폼 화면 🌟 */
                     <>
-                        {/* 바디 */}
                         <div className="p-2 space-y-3 overflow-y-auto custom-scrollbar flex-1">
                             {isEnded &&
                                 <div className="flex items-center gap-1.5 text-xs text-orange-500 bg-orange-50 p-2 rounded-md">
@@ -363,7 +344,6 @@ export const TimerFormModal = ({
                                 </div>    
                             }
                             
-                            {/* 계획 연결 섹션 */}
                             <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                                 <div 
                                     onClick={() => {
@@ -433,7 +413,7 @@ export const TimerFormModal = ({
                                                 </div>
                                             </div>
                                             
-                                            {/* 5. 정렬 버튼 영역 (독립적 토글) */}
+                                            {/* 정렬 버튼 영역 (독립적 토글) */}
                                             <div className="flex items-center justify-between pt-1">
                                                 <div className="flex items-center gap-1.5 text-xs text-orange-500 bg-orange-50 p-2 rounded-md">
                                                     <AlertCircle size={14} />
@@ -441,7 +421,6 @@ export const TimerFormModal = ({
                                                 </div>
 
                                                 <div className="flex gap-2">
-                                                    {/* 날짜 정렬 토글 */}
                                                     <button 
                                                         onClick={() => setDateOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
                                                         className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border text-gray-500 border-gray-200 hover:bg-gray-50`}
@@ -453,7 +432,6 @@ export const TimerFormModal = ({
                                                         }
                                                     </button>
 
-                                                    {/* 카테고리 정렬 토글 */}
                                                     <button 
                                                         onClick={() => setCategoryOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
                                                         className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white text-gray-500 border-gray-200 hover:bg-gray-50`}

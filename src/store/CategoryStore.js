@@ -1,7 +1,9 @@
-// store/categoryStore.js
 import { create } from "zustand";
-import { showToast } from "../../utils/toastMessage";
-import api from "../../utils/api/axios";
+import api from "../utils/api/axios";
+import { showToast } from "../utils/toastMessage";
+import { calendarStore } from "./calendarStore";
+import { useTimerStore } from "./TimerStore";
+import { useBoardStore } from "./boardStore";
 
 export const categoryStore = create((set, get) => ({
     // 다른 컴포넌트에서 사용
@@ -91,29 +93,34 @@ export const categoryStore = create((set, get) => ({
         }
     },
 
-    // 카테고리 삭제
     deleteCategory: async (id) => {
-        console.log(API_URL, id);
-
         try {
-            await api.delete(
-                `/categories/${id}`,
-            );
+            await api.delete(`/categories/${id}`);
             
-            // 로컬 상태에서 제거
-            set((state) => ({
-                categories: state.categories.filter(cat => String(cat.id) !== String(id))
-            }));
+            // 삭제된 카테고리 제외한 목록 업데이트 
+            const updatedCategories = get().categories.filter(cat => String(cat.id) !== String(id));
+            
+            set({ categories: updatedCategories });
+
+            // 남은 카테고리 목록에서 기본 카테고리 찾음
+            const etcCategory = updatedCategories.find(cat => cat.name === '기타');
+            
+            if (etcCategory) {
+                // 기본 카테고리 id로 삭제된 카테고리를 가진 아이템들 동기화
+                calendarStore.getState().syncDeletedCategory(id, etcCategory.id);
+                useTimerStore.getState().syncDeletedCategory(id, etcCategory.id);
+                useBoardStore.getState().syncDeletedCategory(id, etcCategory.id);
+            }
+
+            showToast("카테고리가 삭제되어 해당 카테고리와 연결된 아이템들이 기타 카테고리로 변경되었습니다.");
         } catch (error) {
-            showToast(error.response, "error");
-            throw error;
+            showToast("카테고리 삭제에 실패했습니다.", "error");
         }
     },
 
     // 기본 카테고리 찾기 (예: "기타")
     getDefaultCategory: () => {
         const { categories } = get();
-        // ID가 1이거나 이름이 '기타'인 것, 혹은 배열의 첫 번째 요소 등 정책에 맞게 수정
-        return categories.find(c => c.name === "기타") || categories[0];
+        return categories.find(c => c.name === "기타");
     }
 }));

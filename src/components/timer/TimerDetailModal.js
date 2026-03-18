@@ -1,83 +1,122 @@
 'use client';
 
 // 플랜에서 타이머 누르면 나오는 모달 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-    X, Edit3, Trash2, Play, Pause, RotateCcw, 
+    X, Play, Pause, RotateCcw, 
     CalendarDays, Target } from 'lucide-react';
 import { useTimerStore } from '../../store/TimerStore';
 import { useTimerTicker } from '../../hooks/timerTicker';
 import { formatSeconds } from '../../utils/timeUtils';
 import CategoryBadge from '../common/CategoryBadge';
-import { TimerFormModal } from './TimerModal'; // 기존 수정 폼 모달
+import { ConfirmModal } from '../common/ConfirmModal';
 import { showToast } from '../../utils/toastMessage';
+import { calendarStore } from '../../store/calendarStore';
 
-export const TimerDetailModal = ({ isOpen, onClose, timer, categories, plan, onTimerUpdate }) => {
-    const { controlTimer, updateTimer, deleteTimer } = useTimerStore();
-    const [isEditMode, setIsEditMode] = useState(false);
+export const TimerDetailModal = ({ isOpen, onClose, timer: initialTimer, plan }) => {
+    const { controlTimer } = useTimerStore();
+    const { timers, resetTimer, syncedTimer } = useTimerStore();
     
-    // 실시간 시간 추적
-    const isRunning = useTimerStore(state => state.runningTimer?.id === timer?.id);
+    const { updatePlanCompletedLocally } = calendarStore()
+
+    // 스토어(timers)에서 실시간으로 이 타이머의 최신 데이터를 찾음
+    // Reset이 실행되어 스토어의 elapsed가 0이 되면, 이 timer 변수도 즉시 0이 된 객체를 가리킴
+    const timer = timers.find(t => String(t.id) === String(initialTimer?.id)) || initialTimer;
+
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false, title: "", message: "", onConfirm: null, 
+    });
+
+    // 실시간 상태 추적
     const runningTimer = useTimerStore(state => state.runningTimer);
+    const isRunning = runningTimer?.id === timer?.id && runningTimer?.status === 'RUNNING';
     const liveTime = useTimerTicker(isRunning ? runningTimer : null);
-    
-    const displayTime = isRunning ? formatSeconds(liveTime) : formatSeconds(timer?.elapsed || 0);
 
-    console.log('timerModal:', plan);
+    // 백엔드의 getMinutes() 기준에 맞춰 초로 변환
+    const targetTime = plan?.minutes * 60; 
+    const isPlanCompleted = plan?.completed; // 완료 여부 필드명 확인 필드
+
+    // 한 번만 찌르기 위한 Ref
+    const hasTriggeredRef = useRef(false);
+
+    // (변수?.~ 코드 추가) 의존성 배열이 undefined일 땐 무시했다가 값이 들어오면 바로 돌림
+    useEffect(() => {
+        // 실행 중 + 목표 시간 O + 아직 계획이 완료되지 않았을 때만 감시
+        if (isRunning && targetTime && targetTime > 0 && !isPlanCompleted) {
+
+            // 흐른 시간이 목표 시간을 뚫는 바로 그 순간
+            if (liveTime >= targetTime && !hasTriggeredRef.current) {
+                hasTriggeredRef.current = true; // 중복 호출 방지
+                
+                // 수동 동기화 API 찌르기 (백엔드가 알아서 다 해줌)
+                const triggerSync = async () => {
+                    try {
+                        await syncedTimer(timer.id);
+
+                        updatePlanCompletedLocally(plan.id);
+                    } catch (error) {
+                        hasTriggeredRef.current = false; 
+                    }
+                };
+                triggerSync();
+            }
+        } else if (!isRunning) {
+            // 타이머가 멈추면 초기화 (다시 시작할 때를 대비)
+            hasTriggeredRef.current = false;
+        }
+    }, [liveTime, isRunning, targetTime, timer?.id, isPlanCompleted]);
+    
+    // displayTime 계산 
+    const displayTime = isRunning 
+        ? formatSeconds(liveTime) 
+        : formatSeconds(timer?.elapsed || 0);
+
     if (!isOpen || !timer) return null;
 
-    // --- 핸들러 ---
     const handleToggleStatus = async () => {
+        console.log("액션 바뀌기 전 러닝 타이머:", runningTimer);
         try {
-            const action = isRunning ? 'pause' : 'start';
+            const action = runningTimer?.status === 'RUNNING' ? 'pause' : 'start';
             await controlTimer(timer.id, action);
+
+            console.log("DetailModal 동기화 후 액션 변경 요청:", timer.id, action);
+
+            console.log("액션 바뀐 후 러닝 타이머:", runningTimer);
         } catch (error) { console.error(error); }
     };
 
-    const handleReset = async () => {
-        if(window.confirm("시간을 초기화하시겠습니까?")) {
-            await updateTimer(timer.id, { elapsed: 0 });
+
+    const handleResetTimer = async (id) => {
+        try {
+            await resetTimer(id);
+
+            console.log(displayTime);
+            showToast("타이머가 초기화되었습니다.");
+            
+        } catch (error) {
+            console.log(error);
+            showToast(error.response?.data?.message || "서버에 연결되지 않습니다.", "error");
         }
     };
 
-    const handleDelete = async () => {
-        if(window.confirm("이 타이머를 삭제하시겠습니까?")) {
-            await deleteTimer(timer.id);
-            onClose();
-        }
+    const handleReset = (e) => {
+        e.stopPropagation();
+        
+        setConfirmModal({
+            isOpen: true,
+            title: "타이머 초기화",
+            message: "타이머 시간을 초기화하시겠습니까?\n계획이 연결돼 있다면 자동 완료 처리된 계획의 상태는 유지됩니다.",
+            onConfirm: async () => {
+                await handleResetTimer(timer.id);
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
 
-    if (isEditMode) {
-        return (
-            <TimerFormModal 
-                isOpen={isOpen}
-                onClose={() => setIsEditMode(false)}
-                onSave={async (id, data) => {
-                    // 1. 타이머 정보(연결된 계획 C로 변경 등)를 서버에 업데이트
-                    await updateTimer(id, data);
-                    
-                    setIsEditMode(false);
-                    
-                    // 2. ✨ 핵심: 뒤에 있는 계획 리스트 화면을 즉시 새로고침!
-                    // (A계획에서는 타이머가 떨어지고, C계획에 타이머가 붙은 최신 상태를 서버에서 가져옴)
-                    if (onTimerUpdate) {
-                        onTimerUpdate();
-                    }
-
-                    // 3. (UX 디테일) 만약 원래 열고 들어왔던 A계획과 연결이 끊어졌다면?
-                    // 타이머 상세창 자체를 아예 닫아버리는 것이 자연스럽습니다.
-                    if (data.planId !== plan?.id) {
-                        onClose(); // 모달 완전 종료
-                        showToast("다른 계획으로 타이머가 이동되었습니다.");
-                    }
-                }}
-                initialData={timer}
-                initialDataPlan={plan}
-                categories={categories}
-            />
-        );
-    }
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
 
     return (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
@@ -122,7 +161,7 @@ export const TimerDetailModal = ({ isOpen, onClose, timer, categories, plan, onT
                             {displayTime}
                         </div>
                         <span className={`text-[10px] font-black tracking-[0.2em] uppercase ${isRunning ? 'text-blue-400 animate-pulse' : 'text-gray-300'}`}>
-                            {isRunning ? 'Counting Now' : 'Status: Paused'}
+                            {timer.status}
                         </span>
                     </div>
                 </div>
@@ -135,7 +174,7 @@ export const TimerDetailModal = ({ isOpen, onClose, timer, categories, plan, onT
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Connected Plan</p>
-                            <p className="text-sm font-bold text-gray-700 truncate">{plan.name || "연결된 계획 없음"}</p>
+                            <p className="text-sm font-bold text-gray-700 truncate">{plan?.name || "연결된 계획 없음"}</p>
                         </div>
                     </div>
 
@@ -145,8 +184,8 @@ export const TimerDetailModal = ({ isOpen, onClose, timer, categories, plan, onT
                             onClick={handleToggleStatus}
                             className={`flex-[3] flex items-center justify-center gap-2 py-4 rounded-2xl font-black text-white shadow-lg transition-all active:scale-95 ${isRunning ? 'bg-orange-500 shadow-orange-200' : 'bg-blue-600 shadow-blue-200'}`}
                         >
-                            {isRunning ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
-                            {isRunning ? '일시 정지' : '시작'}
+                            {isRunning && runningTimer?.status === 'RUNNING' ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+                            {isRunning && runningTimer?.status === 'RUNNING' ? '일시 정지' : '시작'}
                         </button>
                         <button 
                             onClick={handleReset}
@@ -155,25 +194,18 @@ export const TimerDetailModal = ({ isOpen, onClose, timer, categories, plan, onT
                             <RotateCcw size={20} />
                         </button>
                     </div>
-
-                    {/* 하단 관리 버튼 */}
-                    <div className="flex gap-2 pt-2">
-                        <button 
-                            onClick={() => setIsEditMode(true)}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50 rounded-xl transition-colors"
-                        >
-                            <Edit3 size={14} /> 정보 수정
-                        </button>
-                        <div className="w-px h-4 bg-gray-200 self-center" />
-                        <button 
-                            onClick={handleDelete}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"
-                        >
-                            <Trash2 size={14} /> 타이머 삭제
-                        </button>
-                    </div>
                 </div>
             </motion.div>
+
+            {confirmModal.isOpen && (
+                <ConfirmModal 
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    onConfirm={confirmModal.onConfirm}
+                    onCancel={closeConfirmModal}
+                />
+            )}
         </div>
     );
 };

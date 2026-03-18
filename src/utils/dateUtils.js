@@ -1,5 +1,5 @@
 export const formatGoalTime = (minutes) => {
-    if (minutes === null || isNaN(minutes) || minutes <= 0) return '-';
+    if (minutes === null || isNaN(minutes) || minutes <= 0) return '00:00';
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -59,14 +59,14 @@ export function getWeeklyRange(date) {
 export function formatTimeAgo(dateString) {
     if (!dateString) return "";
 
-    // 1. "YYYY-MM-DD HH:mm:ss" 형식이라면 공백을 "T"로 치환 (아이폰/Safari 호환성)
+    // YYYY-MM-DD HH:mm:ss 형식이라면 공백을 "T"로 치환 
     const standardizedDate = typeof dateString === 'string' 
         ? dateString.replace(' ', 'T') 
         : dateString;
 
     const date = new Date(standardizedDate);
 
-    // 2. 날짜가 유효하지 않으면(NaN) 원본 문자열이나 에러 표시
+    // 날짜가 유효하지 않으면(NaN) 원본 문자열이나 에러 표시
     if (isNaN(date.getTime())) {
         console.error("날짜 변환 실패:", dateString);
         return "-"; 
@@ -94,12 +94,12 @@ export const formatPeriod = (startDate, endDate) => {
     const [startYear, startMonth, startDay] = startDate.split('-');
     const [endYear, endMonth, endDay] = endDate.split('-');
 
-    // 1. 같은 연도일 경우: 뒤쪽 연도 생략
+    // 같은 연도일 경우: 뒤쪽 연도 생략
     if (startYear === endYear) {
         return `${startYear.slice(2)}.${startMonth}.${startDay} - ${endMonth}.${endDay}`;
     }
 
-    // 2. 다른 연도일 경우: 전체 표시
+    // 다른 연도일 경우: 전체 표시
     return `${startYear.slice(2)}.${startMonth}.${startDay} - ${endYear.slice(2)}.${endMonth}.${endDay}`;
 };
 
@@ -123,7 +123,6 @@ export const getDDay = (endDate) => {
 export const formatDateTime = (dateString) => {
     if (!dateString) return '';
     
-    // 아이폰/Safari 호환성을 위한 T 치환
     const standardizedDate = typeof dateString === 'string' 
         ? dateString.replace(' ', 'T') 
         : dateString;

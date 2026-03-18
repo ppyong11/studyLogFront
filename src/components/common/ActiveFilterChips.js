@@ -6,12 +6,12 @@ export const ActiveFilterChips = ({
     filters, 
     categories, 
     onRemoveFilter,
-    onResetAll,        // 🔥 스토어 직접 참조 제거 (부모가 함수 전달)
-    defaultFilters     // 🔥 도메인(Plan/Timer)마다 다른 기본값을 부모가 전달
+    onResetAll,        // 스토어 직접 참조 제거 (부모가 함수 전달)
+    defaultFilters     // 도메인(Plan/Timer)마다 다른 기본값을 부모가 전달
 }) => {
     const chips = [];
 
-    // 1. 상태 필터 (플랜은 true/false, 타이머는 'RUNNING' 등 문자열)
+    // 상태 필터 (플랜은 true/false, 타이머는 RUNNING 등 문자열)
     if (filters.status !== undefined && filters.status !== null && filters.status !== '') {
         let statusLabel = filters.status;
         if (filters.status === true) statusLabel = '완료됨';
@@ -24,17 +24,21 @@ export const ActiveFilterChips = ({
         });
     }
 
-    // 2. 날짜 필터
-    const isDefaultDate = filters.startDate === defaultFilters.startDate && filters.endDate === defaultFilters.endDate;
-    if (filters.startDate && filters.endDate) {
+    // 날짜 필터
+    const isDefaultDate = filters.startDate === defaultFilters.startDate && 
+                                    (filters.endDate || "") === (defaultFilters.endDate || "");
+    
+    if (filters.startDate) {
         chips.push({ 
             key: 'date', 
-            label: `${filters.startDate} ~ ${filters.endDate}`,
+            label: filters.endDate 
+                ? `${filters.startDate} ~ ${filters.endDate}` // 날짜가 있으면 범위 표시
+                : `${filters.startDate} ~ 전체`, // 날짜가 없으면 전체로 표시
             disabled: isDefaultDate
         });
     }
     
-    // 3. 카테고리 필터
+    // 카테고리 필터
     if (filters.categories && filters.categories.length > 0) {
         filters.categories.forEach(catId => {
             const cat = categories.find(c => c.id === catId);
@@ -47,11 +51,10 @@ export const ActiveFilterChips = ({
     const rawSort = filters.sort || [];
     const sortList = Array.isArray(rawSort) ? rawSort : [rawSort];
     
-    // 기본 필터도 동일하게 처리
     const rawDefaultSort = defaultFilters.sort || [];
     const defaultSortList = Array.isArray(rawDefaultSort) ? rawDefaultSort : [rawDefaultSort];
 
-    // 4-1. 날짜 정렬
+    // 날짜 정렬
     const dateSort = sortList.find(s => s.startsWith('date'));
     if (dateSort) {
         const isDateAsc = dateSort.includes('asc');
@@ -65,7 +68,7 @@ export const ActiveFilterChips = ({
         });
     }
 
-    // 4-2. 카테고리 정렬 (플랜에만 존재, 타이머는 무시됨)
+    // 카테고리 정렬 (타이머는 무시됨)
     const catSort = sortList.find(s => s.startsWith('category'));
     if (catSort) {
         const isCatDesc = catSort.includes('desc');
@@ -83,7 +86,7 @@ export const ActiveFilterChips = ({
 
     const normalize = (val) => (val === null || val === undefined) ? '' : val;
 
-    // 현재 필터가 기본값과 100% 동일한지 체크 (초기화 버튼 표시 여부)
+    // 현재 필터가 기본값과 동일한지 체크 (초기화 버튼 표시 여부)
     const isAllDefault = 
         normalize(filters.startDate) === normalize(defaultFilters.startDate) &&
         normalize(filters.endDate) === normalize(defaultFilters.endDate) &&

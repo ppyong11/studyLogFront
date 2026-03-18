@@ -4,6 +4,7 @@ import { create } from "zustand";
 import api from "../utils/api/axios"; // 인터셉터 Api (토큰 갱신 여부 확인)
 import { showToast } from "../utils/toastMessage";
 import { useTimerStore } from "./TimerStore";
+import { useNotificationStore } from "./NotificationStore";
 
 export const authStore = create((set, get) => ({
     // state 초기 상태
@@ -18,10 +19,6 @@ export const authStore = create((set, get) => ({
     setUser: (user) => set({ user }),
     
     clearUser: () => {
-        localStorage.removeItem('wasLoggedIn');
-        
-        if (get().refreshTimer) clearTimeout(get().refreshTimer);
-        
         // 유저 정보 초기화
         set({ user: null, refreshTimer: null });
 
@@ -59,6 +56,9 @@ export const authStore = create((set, get) => ({
         try{
             const res= await api.post('/logout');
             showToast(res.data.message);
+
+            useNotificationStore.getState().disconnectSSE();
+            get().clearUser();
         } catch (error){
             throw error;
         }
@@ -102,7 +102,7 @@ export const authStore = create((set, get) => ({
     set({ isRefreshing: true });
 
     try {
-        console.log("⏰ 토큰 자동 갱신 시작...");
+        console.log("토큰 자동 갱신 시작");
         const res = await api.post('/refresh', {}, { withCredentials: true });
         const expiresIn = res.data.tokenExpiresIn;
 
@@ -121,6 +121,6 @@ export const authStore = create((set, get) => ({
 
     // 소켓 재연결용 신호기 (초기값 0)
     socketRefreshTrigger: 0, 
-    // 이 함수를 부르면 숫자가 1씩 올라감.
+    // 이 함수를 부르면 숫자가 1씩 올라감
     triggerSocketRefresh: () => set((state) => ({ socketRefreshTrigger: state.socketRefreshTrigger + 1 })),
 }));

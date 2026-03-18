@@ -33,7 +33,7 @@ export const TimerFilterModal = ({ isOpen, onClose, categories }) => {
     if (!isOpen) return null;
 
     const handleApply = async () => {
-        // 🔥 2. 날짜 유효성 검사 로직 추가
+        // 날짜 유효성 검사 로직 추가
         // 한쪽만 입력된 경우 차단
         if ((localStartDate && !localEndDate) || (!localStartDate && localEndDate)) {
             showToast('시작일과 종료일을 모두 지정하거나, 모두 비워주세요.', "error");
@@ -88,7 +88,7 @@ export const TimerFilterModal = ({ isOpen, onClose, categories }) => {
         <div className="fixed inset-0 bg-gray-400/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden">
                 
-                {/* [1. 헤더 영역] */}
+                {/* 헤더 */}
                 <div className="p-5 border-b border-gray-300 flex justify-between items-center shrink-0">
                     <h3 className="text-lg font-semibold">타이머 필터 및 정렬</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -96,7 +96,7 @@ export const TimerFilterModal = ({ isOpen, onClose, categories }) => {
                     </button>
                 </div>
                 
-                {/* [2. 중앙 콘텐츠 영역] */}
+                {/* 중앙 콘텐츠 */}
                 <div className="p-5 space-y-6 overflow-y-auto custom-scrollbar flex-1">
                     
                     {/* 정렬 설정 */}
@@ -152,7 +152,6 @@ export const TimerFilterModal = ({ isOpen, onClose, categories }) => {
                                 type="date" 
                                 value={localStartDate} 
                                 onChange={e => setLocalStartDate(e.target.value)} 
-                                // 🔥 3. 시각적 피드백: 한쪽만 비어있으면 빨간색 테두리 표시
                                 className={`w-full p-2 border rounded-md text-sm outline-none focus:ring-1 focus:ring-blue-500 ${!localStartDate && localEndDate ? 'border-red-300 bg-red-50' : 'border-gray-300'}`} 
                             />
                             <span className="text-gray-400">~</span>
@@ -202,7 +201,7 @@ export const TimerFilterModal = ({ isOpen, onClose, categories }) => {
                     </div>
                 </div> 
 
-                {/* [3. 하단 버튼 영역] */}
+                {/* 하단 버튼 */}
                 <div className="p-5 bg-gray-50 flex justify-end gap-3 border-t border-gray-200 shrink-0">
                     <button 
                         onClick={handleReset} 

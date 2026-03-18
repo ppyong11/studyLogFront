@@ -6,14 +6,21 @@ import { useTimerStore } from '../../store/TimerStore';
 import { useTimerTicker } from '../../hooks/timerTicker';
 import { X, Pause, Play } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal';
+import { formatSeconds } from '../../utils/timeUtils';
+
+// 네 가지 전역 상태 중 하나만 바뀌어도 재렌더링 (훅 재호출)
 const FloatingTimer = () => {
-    const { runningTimer, isFloatingVisible, controlTimer, closeFloating } = useTimerStore();
+    const runningTimer = useTimerStore(state => state.runningTimer);
+    const isFloatingVisible = useTimerStore(state => state.isFloatingVisible);
+    const controlTimer = useTimerStore(state => state.controlTimer);
+    const closeFloating = useTimerStore(state => state.closeFloating);
+
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     
     // 타이머 시간 추적 훅 (runningTimer 객체 전달)
     const displayTime = useTimerTicker(runningTimer);
 
-    // 1. 드래그 제한 범위를 참조할 Ref (전체 화면)
+    // 드래그 제한 범위를 참조할 Ref (전체 화면)
     const constraintsRef = useRef(null);
 
     // 플로팅 모달 표시 조건: 가시성 상태가 true이고 실행 중인 타이머 데이터가 있을 때
@@ -32,7 +39,7 @@ const FloatingTimer = () => {
         }
     };
 
-    // 컨펌 모달에서 '확인'을 눌렀을 때
+    // 컨펌 모달에서 확인을 눌렀을 때
     const handleConfirmClose = async () => {
         await controlTimer(runningTimer.id, 'pause');
         closeFloating(); // 스토어의 가시성 상태 false 및 runningTimer null 처리
@@ -41,7 +48,7 @@ const FloatingTimer = () => {
 
     return (
         <>
-            {/* 2. 전체 화면 영역 내에서만 드래그 가능하도록 설정 */}
+            {/* 전체 화면 영역 내에서만 드래그 가능하도록 설정 */}
             <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[9999]">
                 <motion.div
                     drag
@@ -63,7 +70,7 @@ const FloatingTimer = () => {
                                     {runningTimer.name || 'Study Session'}
                                 </p>
                                 <p className="text-xl font-mono font-black text-gray-800 leading-none">
-                                    {displayTime}
+                                    {formatSeconds(displayTime)}
                                 </p>
                             </div>
                         </div>

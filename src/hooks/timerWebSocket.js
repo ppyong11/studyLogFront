@@ -18,11 +18,16 @@ export const useTimerWebSocket = () => {
         // 로그인한 유저이고, 실행 중인 타이머가 있을 때만 웹소켓 연결
         if (!user || !runningTimer || runningTimer.status !== 'RUNNING') return;
 
-        const socketUrl = "http://localhost:8080/api/ws-timer";
+        const isSecure = window.location.protocol === 'https:';
+        const socketUrl = isSecure 
+            ? 'https://api.studylog.hyeoncode.dev/ws' 
+            : 'http://localhost:8080/ws';
+
+        const socket = new SockJS(socketUrl);
 
         const stompClient = new Client({
             // SockJS를 사용하여 연결 (쿠키를 포함해서 보내기 위함)
-            webSocketFactory: () => new SockJS(socketUrl), // 쿠키 브라우저가 알아서 챙겨감
+            webSocketFactory: () => new socket, // 쿠키 브라우저가 알아서 챙겨감
             connectHeaders: {},
             debug: (str) => {
                 // 개발 환경에서만 로그 확인 (배포 시 주석 처리)

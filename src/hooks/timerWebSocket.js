@@ -27,7 +27,7 @@ export const useTimerWebSocket = () => {
 
         const stompClient = new Client({
             // SockJS를 사용하여 연결 (쿠키를 포함해서 보내기 위함)
-            webSocketFactory: () => new socket, // 쿠키 브라우저가 알아서 챙겨감
+            webSocketFactory: () => socket, // 쿠키 브라우저가 알아서 챙겨감
             connectHeaders: {},
             debug: (str) => {
                 // 개발 환경에서만 로그 확인 (배포 시 주석 처리)

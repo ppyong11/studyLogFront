@@ -34,7 +34,7 @@ export const TimerDetailModal = ({ isOpen, onClose, timer: initialTimer, plan })
     const liveTime = useTimerTicker(isRunning ? runningTimer : null);
 
     // 백엔드의 getMinutes() 기준에 맞춰 초로 변환
-    const targetTime = plan?.minutes * 60; 
+    const targetTime = plan?.minutes * 60;
     const isPlanCompleted = plan?.completed; // 완료 여부 필드명 확인 필드
 
     // 한 번만 찌르기 위한 Ref

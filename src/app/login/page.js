@@ -55,7 +55,6 @@ export default function logInForm(){
 
             showToast(`${res.data.data.nickname} 님, 반가워요  😊`);
             
-            console.log(res);
             setLoginSuccess(res.data.data, res.data.tokenExpiresIn);
 
             setTimeout(() => router.push('/'), 3);

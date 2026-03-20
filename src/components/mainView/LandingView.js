@@ -12,9 +12,6 @@ export default function LandingView() {
                 
                 {/* 메인 인트로 */}
                 <section className="flex flex-col items-center text-center mt-8">
-                    <div className="inline-block px-4 py-1.5 mb-6 bg-blue-100 text-blue-600 font-bold rounded-full text-sm animate-bounce">
-                        스터디부터 일상까지 한 곳에 쏙! 🎯
-                    </div>
                     <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-[1.3] text-slate-800">
                         공부도, 일상도 <br className="md:hidden" />
                         <span className="text-blue-500">나만의 페이스</span>로 🏃‍♀️
@@ -37,11 +34,11 @@ export default function LandingView() {
                     <div>
                         <div className="text-4xl mb-4">⏱️</div>
                         <h2 className="text-3xl font-extrabold mb-4 leading-tight">
-                            집중이 필요한 순간, <br />착! 켜는 타이머
+                            집중하고 싶은 <br /> 순간을 위한 타이머
                         </h2>
                         <p className="text-[17px] text-slate-600 font-medium leading-relaxed">
                             계획을 누르고 타이머를 시작해 보세요! <br/>
-                            내가 정한 목표 시간에만 온전히 몰입할 수 있게 도와줄게요. 🔥
+                            내가 정한 목표 시간에만 온전히 몰입할 수 있어요.
                         </p>
                     </div>
                     <div className="flex justify-center">
@@ -78,11 +75,11 @@ export default function LandingView() {
                     <div>
                         <div className="text-4xl mb-4">📮</div> 
                         <h2 className="text-3xl font-extrabold mb-4 leading-tight">
-                            중요한 순간엔 <br />알림이 톡!
+                            중요한 순간엔 <br />제때 알려주는 알림
                         </h2>
                         <p className="text-[17px] text-slate-600 font-medium leading-relaxed">
                             계획한 시간이 끝나거나 목표를 달성하면 실시간으로 알려드려요. <br/>
-                            일일이 체크할 필요 없이 마음 편히 집중하세요. 🎈
+                            일일이 체크할 필요 없이 마음 편히 집중하세요.
                         </p>
                     </div>
                     <div className="flex justify-center">
@@ -95,9 +92,9 @@ export default function LandingView() {
                 </section>
 
                 {/* 하단 로그인 */}
-                <section className="flex flex-col items-center text-center py-24 mt-10">
+                <section className="flex flex-col items-center text-center">
                     <h2 className="text-3xl font-extrabold mb-8 text-slate-800">
-                        지금 바로 나만의 로그를 시작해볼까요? 🚀
+                        지금 바로 나만의 로그를 시작해볼까요?
                     </h2>
                     <button 
                         onClick={() => router.push('/login')}

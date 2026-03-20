@@ -7,6 +7,7 @@ import PasswordChangeModal from '../../components/myPage/PasswordChangeModal';
 import NicknameChangeModal from '../../components/myPage/NicknameChangeModal';
 import { useRouter } from 'next/navigation';
 import { showToast } from '../../utils/toastMessage';
+import WithdrawModal from '../../components/myPage/WithdrawModal';
 
 // 메인 페이지 컴포넌트
 export default function MyPage() {
@@ -16,6 +17,7 @@ export default function MyPage() {
     const router = useRouter();
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
+    const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
     const [previewImage, setPreviewImage] = useState(null);
 
@@ -115,6 +117,22 @@ export default function MyPage() {
                     </div>
                 </div>
             </div>
+            <div className="flex pt-2">
+                <button  
+                    onClick={() => {
+                        setIsWithdrawModalOpen(true); 
+                    }} 
+                    className="px-4 py-2 text-gray-400 text-sm font-medium hover:text-blue-600 transition-colors whitespace-nowrap outline-none"
+                >
+                    회원 탈퇴
+                </button>
+                
+            </div>
+
+            <WithdrawModal
+            isOpen={isWithdrawModalOpen}
+            onClose={() => setIsWithdrawModalOpen(false)}
+            />
 
             <PasswordChangeModal 
                 isOpen={isPasswordModalOpen} 

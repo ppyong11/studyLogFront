@@ -64,6 +64,18 @@ export const authStore = create((set, get) => ({
         }
     },
 
+    withdraw: async () => {
+        try {
+            const res = await api.post('/withdraw');
+            showToast(res.data.message);
+
+            useNotificationStore.getState().disconnectSSE();
+            get().clearUser();
+        } catch (error){
+            throw error;
+        }
+    },
+
     // 로그인 성공 시 호출할 함수
     setLoginSuccess: (userData, expiresInSeconds) => {
         localStorage.setItem('wasLogedIn', 'true');

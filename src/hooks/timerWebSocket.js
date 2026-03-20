@@ -20,8 +20,8 @@ export const useTimerWebSocket = () => {
 
         const isSecure = window.location.protocol === 'https:';
         const socketUrl = isSecure 
-            ? 'https://api.studylog.hyeoncode.dev/ws' 
-            : 'http://localhost:8080/ws';
+            ? 'https://api.studylog.hyeoncode.dev/ws-timer' 
+            : 'http://localhost:8080/ws-timer';
 
         const socket = new SockJS(socketUrl);
 

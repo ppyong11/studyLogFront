@@ -12,51 +12,6 @@ export const useNotificationStore = create((set, get) => ({
 
     eventSource: null, // 연결 객체 보관용
 
-    // SSE 실시간 연결 로직 (로그인 후 호출)
-    connectSSE: () => {
-        // 이미 연결되어 있으면 중복 연결 방지
-        if (get().eventSource) return;
-
-        // 서버가 계속해서 데이터를 넣어주는 스트리밍 방식이라 axios 못 씀 (eventSource 사용) 
-        const baseURL = process.env.NEXT_PUBLIC_API_URL || '';
-        const sseUrl = `${baseURL}/api/notifications/subscribe`;
-
-        // 쿠키 포함해서 요청
-        const eventSource = new EventSource(sseUrl, {
-            withCredentials: true 
-        });
-
-        // 서버에서 "notification"이라는 이름으로 데이터를 보냈을 때
-        eventSource.addEventListener('notification', (event) => {
-            try {
-                const newNoti = JSON.parse(event.data);
-                
-                set((state) => {
-                    const shouldAddToList = state.notifications.length > 0;
-                    return {
-                        unreadCount: state.unreadCount + 1,
-                        notifications: shouldAddToList ? [newNoti, ...state.notifications] : state.notifications,
-                        total: state.total + 1 
-                    };
-                });
-
-                // 실시간 팝업 띄우기
-                showToast("새로운 알림이 도착했습니다.", "info");
-            } catch (error) {
-                console.error("SSE 데이터 파싱 에러", error);
-            }
-        });
-
-        // 에러 발생 시 (세션 만료 등)
-        eventSource.onerror = (error) => {
-            console.error("SSE 연결 에러 발생, 연결을 종료합니다.", error);
-            eventSource.close();
-            set({ eventSource: null });
-        };
-
-        set({ eventSource });
-    },
-
     // SSE 연결 해제 (로그아웃 시 반드시 호출)
     disconnectSSE: () => {
         const { eventSource } = get();

@@ -33,40 +33,6 @@ export const TimerDetailModal = ({ isOpen, onClose, timer: initialTimer, plan })
     const isRunning = runningTimer?.id === timer?.id && runningTimer?.status === 'RUNNING';
     const liveTime = useTimerTicker(isRunning ? runningTimer : null);
 
-    // 백엔드의 getMinutes() 기준에 맞춰 초로 변환
-    const targetTime = plan?.minutes * 60;
-    const isPlanCompleted = plan?.completed; // 완료 여부 필드명 확인 필드
-
-    // 한 번만 찌르기 위한 Ref
-    const hasTriggeredRef = useRef(false);
-
-    // (변수?.~ 코드 추가) 의존성 배열이 undefined일 땐 무시했다가 값이 들어오면 바로 돌림
-    useEffect(() => {
-        // 실행 중 + 목표 시간 O + 아직 계획이 완료되지 않았을 때만 감시
-        if (isRunning && targetTime && targetTime > 0 && !isPlanCompleted) {
-
-            // 흐른 시간이 목표 시간을 뚫는 바로 그 순간
-            if (liveTime >= targetTime && !hasTriggeredRef.current) {
-                hasTriggeredRef.current = true; // 중복 호출 방지
-                
-                // 수동 동기화 API 찌르기 (백엔드가 알아서 다 해줌)
-                const triggerSync = async () => {
-                    try {
-                        await syncedTimer(timer.id);
-
-                        updatePlanCompletedLocally(plan.id);
-                    } catch (error) {
-                        hasTriggeredRef.current = false; 
-                    }
-                };
-                triggerSync();
-            }
-        } else if (!isRunning) {
-            // 타이머가 멈추면 초기화 (다시 시작할 때를 대비)
-            hasTriggeredRef.current = false;
-        }
-    }, [liveTime, isRunning, targetTime, timer?.id, isPlanCompleted]);
-    
     // displayTime 계산 
     const displayTime = isRunning 
         ? formatSeconds(liveTime) 

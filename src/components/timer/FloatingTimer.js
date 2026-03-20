@@ -1,19 +1,28 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTimerStore } from '../../store/TimerStore'; 
 import { useTimerTicker } from '../../hooks/timerTicker';
+import { calendarStore } from '../../store/calendarStore';
 import { X, Pause, Play } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal';
 import { formatSeconds } from '../../utils/timeUtils';
 
 // 네 가지 전역 상태 중 하나만 바뀌어도 재렌더링 (훅 재호출)
 const FloatingTimer = () => {
-    const runningTimer = useTimerStore(state => state.runningTimer);
     const isFloatingVisible = useTimerStore(state => state.isFloatingVisible);
     const controlTimer = useTimerStore(state => state.controlTimer);
     const closeFloating = useTimerStore(state => state.closeFloating);
+
+    const { runningTimer, syncedTimer } = useTimerStore();
+    const { updatePlanCompletedLocally } = calendarStore();
+
+
+    const isRunning = runningTimer?.status === 'RUNNING';
+
+    const hasTriggeredRef = useRef(false);
+    const trackedTimerIdRef = useRef(null);
 
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     
@@ -23,11 +32,35 @@ const FloatingTimer = () => {
     // 드래그 제한 범위를 참조할 Ref (전체 화면)
     const constraintsRef = useRef(null);
 
-    // 플로팅 모달 표시 조건: 가시성 상태가 true이고 실행 중인 타이머 데이터가 있을 때
-    if (!isFloatingVisible || !runningTimer) return null;
+    useEffect(() => {
+        const plan = runningTimer?.connectedPlan;
+        const targetTime = plan?.minutes * 60;
+        const isPlanCompleted = plan?.completed;
 
-    const isRunning = runningTimer.status === 'RUNNING';
+        // 타이머가 바뀌면 ref 초기화 (다른 타이머로 갈아탔을 때)
+        if (trackedTimerIdRef.current !== runningTimer?.id) {
+            hasTriggeredRef.current = false;
+            trackedTimerIdRef.current = runningTimer?.id ?? null;
+        }
 
+        if (isRunning && targetTime > 0 && !isPlanCompleted) {
+            if (displayTime >= targetTime && !hasTriggeredRef.current) {
+                hasTriggeredRef.current = true;
+
+                const triggerSync = async () => {
+                    try {
+                        await syncedTimer(runningTimer.id);
+                        updatePlanCompletedLocally(plan.id);
+                    } catch {
+                        hasTriggeredRef.current = false;
+                    }
+                };
+                triggerSync();
+            }
+        } else if (!isRunning) {
+            hasTriggeredRef.current = false;
+        }
+    }, [displayTime, runningTimer?.id, runningTimer?.status, runningTimer?.connectedPlan?.completed]);
     // X 버튼 클릭 핸들러
     const handleCloseClick = (e) => {
         // 드래그 이벤트 전파 방지 *클릭인데 살짝 움직이면 드래그로 인식할 수 있음
@@ -45,6 +78,9 @@ const FloatingTimer = () => {
         closeFloating(); // 스토어의 가시성 상태 false 및 runningTimer null 처리
         setIsConfirmOpen(false);
     }
+
+    // 플로팅 모달 표시 조건: 가시성 상태가 true이고 실행 중인 타이머 데이터가 있을 때
+    if (!isFloatingVisible || !runningTimer) return null;
 
     return (
         <>

@@ -32,42 +32,6 @@ const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, p
     const isThisTimerRunning = isRunning && runningTimer?.id === timer.id && runningTimer?.status === 'RUNNING';
     const liveTime = useTimerTicker(isThisTimerRunning ? runningTimer : null);
 
-    // 백엔드의 getMinutes() 기준에 맞춰 초로 변환
-    const targetTime = timer.connectedPlan?.minutes * 60; 
-
-    const isPlanCompleted = timer.connectedPlan?.completed; // 완료 여부 필드명 확인 필요
-
-    // 한 번만 찌르기 위한 Ref
-    const hasTriggeredRef = useRef(false);
-
-    useEffect(() => {
-        // 실행 중 + 목표 시간 > 0 + 아직 계획이 완료되지 않았을 때만 감시
-        if (isThisTimerRunning && targetTime && targetTime > 0 && !isPlanCompleted) {
-
-            // 흐른 시간이 목표 시간을 뚫는 바로 그 순간
-            if (liveTime >= targetTime && !hasTriggeredRef.current) {
-                hasTriggeredRef.current = true; // 중복 호출 방지
-                
-                // 수동 동기화 API 찌르기 (백엔드가 알아서 다 해줌)
-                // useEffect에서 비동기 못 써서 async 함수 만들고 사용 
-                const triggerSync = async () => {
-                    try {
-                        await syncedTimer(timer.id);
-
-                        updatePlanCompletedLocally(timer.connectedPlan?.id);
-                    } catch (error) {
-                        hasTriggeredRef.current = false; 
-                    }
-                };
-                
-                triggerSync();
-            }
-        } else if (!isThisTimerRunning) {
-            // 타이머가 멈추면 초기화 (다시 시작할 때를 대비)
-            hasTriggeredRef.current = false;
-        }
-    }, [liveTime, isThisTimerRunning, targetTime, timer?.id, isPlanCompleted]);
-
     const displayTime = isThisTimerRunning 
         ? formatSeconds(liveTime)
         : formatSeconds(timer.elapsed || 0); //pause, ended는 elapsed로 띄우기

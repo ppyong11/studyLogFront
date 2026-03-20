@@ -191,13 +191,13 @@ export default function SignUpForm() {
                 },
             });
 
-            alert(res.data.message);
+            showToast(res.data.message);
             setIsNicknameChecked(true);
         } catch (error){
             if (error.response) { //중복일 경우
-                alert(error.response.data.message);
+                showToast(error.response.data.message);
             } else { // 에러 응답이 안 온 상황 (서버 죽었거나 네트워크 문제, 프론트 문제) 
-                alert(`서버에 연결되지 않습니다.`);
+                showToast(`서버에 연결되지 않습니다.`, 'error');
             }
         }
     };
@@ -214,7 +214,7 @@ export default function SignUpForm() {
             if(!isEmailSent) { //첫 발송
                 showToast("사용 가능한 이메일입니다. " + res.data.message);
             } else{
-                showToast("인증 메일이 재전송되었습니다")
+                showToast("인증 메일이 재전송되었습니다");
             }
 
             setIsEmailSent(true);
@@ -222,9 +222,9 @@ export default function SignUpForm() {
             setTimer(180); // 타이머 초기화
         } catch (error){
             if (error.response) {
-                alert(error.response.data.message);
+                showToast(error.response.data.message);
             } else { 
-                alert(`서버에 연결되지 않습니다.`);
+                showToast(`서버에 연결되지 않습니다.`, 'error');
             }
         }
 
@@ -233,7 +233,7 @@ export default function SignUpForm() {
     // 인증 코드 확인 핸들러
     const handleAuthCodeConfirm = async () => {
         if(timer === 0){
-        alert("인증 시간이 만료되었습니다. 재전송 버튼을 눌러주세요.");
+        showToast("인증 시간이 만료되었습니다. 재전송 버튼을 눌러주세요.", 'error');
         return;
         }
         
@@ -245,13 +245,13 @@ export default function SignUpForm() {
             });
 
             // 인증 성공 시 알림
-            alert(res.data.message);
+            showToast(res.data.message);
             setIsEmailVerified(true);
         } catch (error){
             if (error.response) { //인증 실패
-                alert(error.response.data.message);
+                showToast(error.response.data.message);
             } else { // 에러 응답이 안 온 상황 (서버 죽었거나 네트워크 문제, 프론트 문제) 
-                alert(`서버에 연결되지 않습니다.`);
+                showToast(`서버에 연결되지 않습니다.`, 'error');
             }
         }
     };
@@ -267,20 +267,20 @@ export default function SignUpForm() {
         const isEmailValid = validate('email', formData.email);
 
         if (!isIdValid || !isPasswordValid || !isConfirmPasswordValid || !isNicknameValid || !isEmailValid) {
-            alert('입력 정보를 다시 확인해주세요.');
+            showToast('입력 정보를 다시 확인해주세요.', 'error');
             return;
         }
 
         if (!isIdChecked) {
-            alert('아이디 중복 확인을 해주세요.');
+            showToast('아이디 중복 확인을 해주세요.', 'error');
             return;
         }
         if (!isNicknameChecked) {
-            alert('닉네임 중복 확인을 해주세요.');
+            showToast('닉네임 중복 확인을 해주세요.', 'error');
             return;
         }
         if (!isEmailVerified) {
-            alert('이메일 인증을 완료해주세요.');
+            showToast('이메일 인증을 완료해주세요.', 'error');
             return;
         }
 
@@ -295,13 +295,13 @@ export default function SignUpForm() {
             console.log(res.data);
 
             //성공 시 알림 + 리디렉션
-            alert('회원가입이 완료되었습니다!');
+            showToast('회원가입이 완료되었습니다!');
             router.push('/');
         } catch (error){
             if (error.response) { //서버로부터 에러 응답 받음
-                alert(error.response.data.message);
+                showToast(error.response.data.message);
             } else { // 에러 응답이 안 온 상황 (서버 죽었거나 네트워크 문제, 프론트 문제) 
-                alert(`서버에 연결되지 않습니다.`);
+                showToast(`서버에 연결되지 않습니다.`, 'error');
             }
         }
     };

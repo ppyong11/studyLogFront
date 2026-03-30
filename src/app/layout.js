@@ -11,8 +11,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <body>
+        {/* 로그인 여부 파악 */}
         <AppProvider>
-          {/* 보이지 않는 전역 로직(로그인, 웹소켓)을 여기서 씌워줌 */}
+          {/* 웹소켓 실행 */}
           <AppLayout>
             <div className="min-h-screen bg-gray-100">
               <header className="w-full flex justify-center">

@@ -37,7 +37,7 @@ export default function TimerPage() {
     const { 
         timers, filters, setFilters, fetchTimers, 
         isLoading, totalPages, page, updateTimer, addTimer, updatePlanNameInTimers,
-        deleteTimer, resetTimer, controlTimer, fetchRunningTimer, runningTimer
+        deleteTimer, resetTimer, controlTimer, fetchRunningTimer
     } = useTimerStore();
 
     const { categories, fetchCategories } = categoryStore();
@@ -286,7 +286,7 @@ export default function TimerPage() {
                 />
             </div>
             
-            {/* 3. 메인 뷰 컨텐츠 (리스트 영역) */}
+            {/* 메인 뷰 컨텐츠 (리스트 영역) */}
             <div className="flex-1 px-5 pt-4 pb-10 overflow-auto">
                 <div className="flex flex-col gap-3">
                     {isLoading && timers.length === 0 ? (

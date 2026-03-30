@@ -85,7 +85,7 @@ const FloatingTimer = () => {
     return (
         <>
             {/* 전체 화면 영역 내에서만 드래그 가능하도록 설정 */}
-            <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[9999]">
+            <div ref={constraintsRef} className="inset-0 pointer-events-none z-[9999]">
                 <motion.div
                     drag
                     dragConstraints={constraintsRef} 

@@ -24,12 +24,11 @@ export default function RootLayout({ children }) {
               <main className="w-full md:w-[90%] max-w-[1200px] mx-auto bg-white min-h-screen">
                 <Toaster position="top-center" reverseOrder={false} />
                 {children}
+                <FloatingTimer />
               </main>
             </div>
           </AppLayout>
         </AppProvider>
-        
-        <FloatingTimer />
       </body>
     </html>
   );

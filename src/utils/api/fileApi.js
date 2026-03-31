@@ -8,7 +8,7 @@ export const fetchFile = async (fileId) => {
             responseType: 'blob'
         });
         
-        // 받아온 Blob 데이터를 브라우저에서 읽을 수 있는 임시 URL로 변환
+        // 받아온 Blob 데이터를 브라우저에서 읽을 수 있는 임시 URL로 변환 (태그에 활용됨)
         const fileUrl = window.URL.createObjectURL(response.data);
         return fileUrl;
         
@@ -18,7 +18,7 @@ export const fetchFile = async (fileId) => {
     }
 };
 
-// 2. 파일 다운로드 실행 함수
+// 파일 다운로드 실행 함수
 export const handleDownload = async (fileId, fileName) => {
     try {
         // 서버에 파일 요청
@@ -28,13 +28,13 @@ export const handleDownload = async (fileId, fileName) => {
         
         // 브라우저 다운로드 처리
         const blob = new Blob([response.data], { type: response.headers['content-type'] });
-        const url = window.URL.createObjectURL(blob);
+        const url = window.URL.createObjectURL(blob); 
         
         const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName; // 저장될 파일명
+        link.href = url; // 다운로드할 파일 위치 지정
+        link.download = fileName; // 다운로드로 처리 + 파일명 지정
         document.body.appendChild(link);
-        link.click();
+        link.click(); // 다운로드 실행
         
         // 메모리 해제 및 태그 제거
         setTimeout(() => {

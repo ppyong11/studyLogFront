@@ -24,10 +24,10 @@ export default function BoardFormModal({ isOpen, onSave, onClose, initialData = 
     const { handleAddCategory, handleUpdateCategory, handleDeleteCategory } = useCategoryAction();
     
     const [title, setTitle] = useState(initialData?.title || '');
-const [content, setContent] = useState(initialData?.content || '');
-const [category, setCategory] = useState(initialData?.categoryId || '');
-const [files, setFiles] = useState(initialData?.files?.map(f => ({ ...f, isTemp: false })) || []);
-    
+    const [content, setContent] = useState(initialData?.content || '');
+    const [category, setCategory] = useState(initialData?.categoryId || '');
+    const [files, setFiles] = useState(initialData?.files?.map(f => ({ ...f, isTemp: false })) || []);
+        
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false, title: "", message: "", onConfirm: null, 

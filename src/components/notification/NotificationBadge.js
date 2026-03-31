@@ -1,3 +1,5 @@
+import { useNotificationStore } from "../../store/NotificationStore";
+
 export function NotificationBadge() {
     // unreadCount만 구독 (해당 데이터 바뀔 때 리렌더링)
     const unreadCount = useNotificationStore((state) => state.unreadCount);

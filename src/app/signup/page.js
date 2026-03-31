@@ -232,9 +232,10 @@ export default function SignUpForm() {
 
     // 인증 코드 확인 핸들러
     const handleAuthCodeConfirm = async () => {
+        // 180초 지나면 API 요청 X
         if(timer === 0){
-        showToast("인증 시간이 만료되었습니다. 재전송 버튼을 눌러주세요.", 'error');
-        return;
+            showToast("인증 시간이 만료되었습니다. 재전송 버튼을 눌러주세요.", 'error');
+            return;
         }
         
         // 인증코드 API 요청

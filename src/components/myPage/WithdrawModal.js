@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { authStore } from '../../store/authStore';
+import { showToast } from '../../utils/toastMessage';
 
 export default function WithdrawModal({ isOpen, onClose }) {
     const [isAgreed, setIsAgreed] = useState(false);
@@ -19,7 +20,17 @@ export default function WithdrawModal({ isOpen, onClose }) {
 
     const handleDelete = async () => {
         if (isAgreed) {
-            await withdraw();
+            try {
+                await withdraw();
+
+                showToast("회원탈퇴 처리되었습니다.");
+            } catch (error){
+                if (error.response) { 
+                    showToast(error.response.data.message, "error");
+                } else {
+                    showToast(`서버에 연결되지 않습니다.`, "error");
+                }
+            }
         }
     };
 

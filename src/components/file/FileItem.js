@@ -18,6 +18,7 @@ export const FileItem = ({ file }) => {
             setFileUrl(url);
         });
 
+        // 컴포넌트가 사라질 때(언마운트) 사용됨 *메모리 누수 방지
         return () => { if (objectUrl) window.URL.revokeObjectURL(objectUrl); };
     }, [file.id, isBlack, isImage]);
 
@@ -25,7 +26,7 @@ export const FileItem = ({ file }) => {
 
 return (
         <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 transition-all">
-            {/* 1. 왼쪽: 이미지 미리보기 또는 아이콘 */}
+            {/* 이미지 미리보기 */}
             <div className="w-10 h-10 rounded bg-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
                 {isImage ? (
                     fileUrl ? (
@@ -38,7 +39,7 @@ return (
                 )}
             </div>
 
-            {/* 2. 오른쪽: 파일 정보 및 다운로드 클릭 */}
+            {/* 파일 정보 및 다운로드 클릭 */}
             <div className="flex-1 min-w-0">
                 <p 
                     onClick={() => handleDownload(file.id, fileName)}

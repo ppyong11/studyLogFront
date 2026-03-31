@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useUIStore } from "../store/uiStore";
-import { useNotificationStore } from "../store/NotificationStore";
-import { ConfirmModal } from './common/ConfirmModal';
-import { formatTimeAgo } from '../utils/dateUtils';
+import { useUIStore } from "../../store/uiStore";
+import { useNotificationStore } from "../../store/NotificationStore";
+import { ConfirmModal } from '../common/ConfirmModal';
+import { formatTimeAgo } from '../../utils/dateUtils';
 import { Trash2, CheckCheck, X, Bell } from "lucide-react"; // 아이콘 추가
-import { showToast } from "../utils/toastMessage";
+import { showToast } from "../../utils/toastMessage";
 
 export function NotificationModal() {
     const isOpen = useUIStore((state) => state.isNotificationOpen);

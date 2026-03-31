@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from 'next/navigation';
 import { useUIStore } from "../store/uiStore";
-import { NotificationModal } from './NotificationModal';
+import { NotificationModal } from './notification/NotificationModal';
 import { useNotificationStore } from "../store/NotificationStore";
 import { ConfirmModal } from "./common/ConfirmModal";
 import { authStore } from "../store/authStore";
+import { NotificationBadge } from "./notification/NotificationBadge";
 
 import Link from 'next/link';
 import logo from "../assets/logo.png";
@@ -23,7 +24,7 @@ export default function Header() {
 
     const { user, isChecking, hasChecked, logout } = authStore();
 
-    const { unreadCount, fetchUnreadCount, addNotificationFromSSE } = useNotificationStore();    
+    const { fetchUnreadCount, addNotificationFromSSE } = useNotificationStore();    
     const toggleNotification= useUIStore((state) => state.toggleNotification);
     const isNotificationOpen = useUIStore((state) => state.isNotificationOpen); //모달 상태
 
@@ -122,12 +123,7 @@ export default function Header() {
                             className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
                         >
                             <Bell className="w-6 h-6 text-gray-600" />
-                            
-                            {unreadCount > 0 && (
-                                <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-white transform translate-x-1 -translate-y-1">
-                                    {unreadCount > 99 ? "99+" : unreadCount}
-                                </span>
-                            )}
+                            <NotificationBadge />
                         </button>
 
                         {isNotificationOpen && <NotificationModal />}

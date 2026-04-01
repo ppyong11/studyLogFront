@@ -10,16 +10,12 @@ import {
     Edit2, Link2Off, Trash2, Link, MoreVertical, Square 
 } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal'; 
-import { calendarStore } from '../../store/calendarStore';
-
 const TimerItem = ({ timer, onPlanClick, onEdit, onDelete, onReset, onControl, page  }) => { 
-    const { toggleExpanded, expandedTimerId, runningTimer, syncedTimer } = useTimerStore();
+    const { toggleExpanded, expandedTimerId, runningTimer } = useTimerStore();
     
     const isExpanded = expandedTimerId === timer.id;
     const isRunning = timer.status === 'RUNNING';
     const isEnded = timer.status === 'ENDED';
-
-    const { updatePlanCompletedLocally } = calendarStore()
     
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false, title: "", message: "", onConfirm: null, 

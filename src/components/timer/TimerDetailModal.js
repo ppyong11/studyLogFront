@@ -1,7 +1,7 @@
 'use client';
 
 // 플랜에서 타이머 누르면 나오는 모달 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
     X, Play, Pause, RotateCcw, 
@@ -12,14 +12,11 @@ import { formatSeconds } from '../../utils/timeUtils';
 import CategoryBadge from '../common/CategoryBadge';
 import { ConfirmModal } from '../common/ConfirmModal';
 import { showToast } from '../../utils/toastMessage';
-import { calendarStore } from '../../store/calendarStore';
 
 export const TimerDetailModal = ({ isOpen, onClose, timer: initialTimer, plan }) => {
     const { controlTimer } = useTimerStore();
-    const { timers, resetTimer, syncedTimer } = useTimerStore();
+    const { timers, resetTimer } = useTimerStore();
     
-    const { updatePlanCompletedLocally } = calendarStore()
-
     // 스토어(timers)에서 실시간으로 이 타이머의 최신 데이터를 찾음
     // Reset이 실행되어 스토어의 elapsed가 0이 되면, 이 timer 변수도 즉시 0이 된 객체를 가리킴
     const timer = timers.find(t => String(t.id) === String(initialTimer?.id)) || initialTimer;

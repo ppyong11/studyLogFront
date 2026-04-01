@@ -104,32 +104,33 @@ export const authStore = create((set, get) => ({
 
     // 자동으로 조용히 토큰을 다시 받아오는 함수
     silentRefresh: async () => {
-    // 실행 전 타이머 ID를 즉시 null로 - 중복 실행 원천 차단
-    set({ refreshTimer: null });
+        // 실행 전 타이머 ID를 즉시 null로 - 중복 실행 원천 차단
+        set({ refreshTimer: null });
 
-    if (!get().user) return;
-    
-    // isChecking 대신 별도 플래그로 관리
-    if (get().isRefreshing) return;
-    set({ isRefreshing: true });
-
-    try {
-        console.log("토큰 자동 갱신 시작");
-        const res = await api.post('/refresh', {}, { withCredentials: true });
-        const expiresIn = res.data.tokenExpiresIn;
-
-        get().setLoginSuccess(get().user, expiresIn);
+        if (!get().user) return;
         
-        // triggerSocketRefresh는 딜레이 후 실행
-        setTimeout(() => get().triggerSocketRefresh(), 200);
+        // isChecking 대신 별도 플래그로 관리
+        if (get().isRefreshing) return;
+        set({ isRefreshing: true });
 
-    } catch (error) {
-        console.error("자동 갱신 실패");
-        get().clearUser();
-    } finally {
-        set({ isRefreshing: false });
-    }
-},
+        try {
+            console.log("토큰 자동 갱신 시작");
+            const res = await api.post('/refresh', {}, { withCredentials: true });
+            const expiresIn = res.data.tokenExpiresIn;
+
+            // 다시 로그인 갱신 (타이머 재설정됨)
+            get().setLoginSuccess(get().user, expiresIn);
+            
+            // triggerSocketRefresh는 딜레이 후 실행
+            setTimeout(() => get().triggerSocketRefresh(), 200);
+
+        } catch (error) {
+            console.error("자동 갱신 실패");
+            get().clearUser();
+        } finally {
+            set({ isRefreshing: false });
+        }
+    },
 
     // 소켓 재연결용 신호기 (초기값 0)
     socketRefreshTrigger: 0, 

@@ -57,7 +57,7 @@ export default function logInForm(){
             
             setLoginSuccess(res.data.data, res.data.tokenExpiresIn);
 
-            setTimeout(() => router.push('/'), 3);
+            setTimeout(() => router.push('/'), 100);
         } catch(error){
             console.log("axios error", error);
             console.log("response", error.response);

@@ -14,7 +14,7 @@ export default function LandingView() {
                 <section className="flex flex-col items-center text-center mt-8">
                     <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-[1.3] text-slate-800">
                         공부도, 일상도 <br className="md:hidden" />
-                        <span className="text-blue-500">나만의 페이스</span>로 🏃‍♀️
+                        <span className="text-blue-500">나만의 페이스</span>로
                     </h1>
                     <p className="text-lg text-slate-600 mb-10 max-w-xl font-medium leading-relaxed">
                         하루 일정과 공부 기록, 집중 타이머, 다이어리까지! <br className="hidden md:block" />

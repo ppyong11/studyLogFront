@@ -1,9 +1,6 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
+import Link from 'next/link'; // 클릭하는 순간 리액트가 낚아채서 CSR로 페이지 이동함
 
 export default function LandingView() {
-    const router = useRouter();
 
     return (
         <div className="w-full min-h-screen bg-[#FDFBF7] text-slate-800 overflow-x-hidden selection:bg-blue-200">
@@ -96,12 +93,12 @@ export default function LandingView() {
                     <h2 className="text-3xl font-extrabold mb-8 text-slate-800">
                         지금 바로 나만의 로그를 시작해볼까요?
                     </h2>
-                    <button 
-                        onClick={() => router.push('/login')}
-                        className="px-10 py-5 font-bold text-xl text-white bg-slate-800 hover:bg-slate-900 rounded-full transition-all hover:-translate-y-1 hover:shadow-xl active:scale-95"
+                    <Link 
+                        href="/login"
+                        className="px-10 py-5 font-bold text-xl text-white bg-slate-800 rounded-full hover:-translate-y-1 transition-all"
                     >
                         STUDY LOG 시작하기
-                    </button>
+                    </Link>
                     <p className="mt-6 text-sm text-slate-400 font-medium">
                         매일 조금씩 성장하는 나를 기록해 보세요.
                     </p>

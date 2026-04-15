@@ -4,7 +4,7 @@ import PlanDashBoard from "../components/mainView/PlanDashBoard";
 
 export default async function MainPage() {
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get('access_Token'); 
+    const accessToken = cookieStore.get('access_token'); 
 
     if (!accessToken) {
         return <LandingView />;
